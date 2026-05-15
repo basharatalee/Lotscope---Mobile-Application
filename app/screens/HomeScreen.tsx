@@ -69,7 +69,9 @@ type CatalogueLot = {
 const activeOverlay = {
   id: 'southport-tycoon',
   name: 'Southport Tycoon',
-  totalOverlayOptions: '100+',
+  status: 'ACTIVE',
+  rankedLots: '126 Lots Ranked',
+  insight: '23 elite pedigree matches identified',
 };
 
 const rawImportPreview: RawStallionMatchRow[] = [
@@ -135,7 +137,7 @@ const catalogueLots = rawImportPreview
   .sort((a, b) => b.matchPercent - a.matchPercent)
   .map((lot, index) => ({ ...lot, rank: index + 1 }));
 
-function HomeScreen() {
+function HomeScreen({ onOpenSales }: { onOpenSales?: () => void }) {
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView
@@ -180,30 +182,43 @@ function HomeScreen() {
             </View>
 
             <View style={styles.overlayCopy}>
-              <Text style={styles.overlayTitle}>
-                {activeOverlay.name} Overlay Active
-              </Text>
+              <View style={styles.overlayTitleRow}>
+                <Text style={styles.overlayTitle}>
+                  {activeOverlay.name} Overlay
+                </Text>
+                <View style={styles.overlayStatusBadge}>
+                  <Text style={styles.overlayStatusText}>
+                    {activeOverlay.status}
+                  </Text>
+                </View>
+              </View>
               <Text style={styles.overlayMeta}>
-                Ranking catalogue by Stallion Match %
+                {activeOverlay.insight}
               </Text>
             </View>
 
             <View style={styles.overlayFutureBadge}>
               <Text style={styles.overlayFutureText}>
-                {activeOverlay.totalOverlayOptions}
+                {activeOverlay.rankedLots}
               </Text>
             </View>
           </View>
 
           <View style={styles.chipRow}>
             <FilterChip label="Stallion Match" active />
-            <FilterChip label="Elite" />
+            <FilterChip label="Elite Matches" />
             <FilterChip label="90%+" />
+            <FilterChip label="Value" />
+            <FilterChip label="Shortlisted" />
           </View>
         </Panel>
 
         <Panel>
-          <SectionHeader title="UPCOMING SALES" action="See all" />
+          <SectionHeader
+            title="UPCOMING SALES"
+            action="See all"
+            onActionPress={onOpenSales}
+          />
 
           <View style={styles.saleRow}>
             <ImageBackground
@@ -288,7 +303,7 @@ function HomeScreen() {
 
       <View style={styles.tabBar}>
         <TabItem icon="house" label="Dashboard" active />
-        <TabItem icon="sitemap" label="Sales" />
+        <TabItem icon="sitemap" label="Sales" onPress={onOpenSales} />
         <TabItem icon="star" label="Shortlist" />
         <TabItem icon="chart-simple" label="Activity" />
         <TabItem icon="ellipsis" label="More" />
@@ -304,15 +319,23 @@ function Panel({ children }: { children: React.ReactNode }) {
 function SectionHeader({
   title,
   action,
+  onActionPress,
 }: {
   title: string;
   action?: string;
+  onActionPress?: () => void;
 }) {
   return (
     <View style={styles.sectionHeader}>
       <Text style={styles.sectionTitle}>{title}</Text>
       {action ? (
-        <Text style={styles.sectionAction}>{action}</Text>
+        <Pressable
+          disabled={!onActionPress}
+          onPress={onActionPress}
+          hitSlop={8}
+          style={styles.sectionActionButton}>
+          <Text style={styles.sectionAction}>{action}</Text>
+        </Pressable>
       ) : null}
     </View>
   );
@@ -415,13 +438,15 @@ function TabItem({
   icon,
   label,
   active,
+  onPress,
 }: {
   icon: AppIconName;
   label: string;
   active?: boolean;
+  onPress?: () => void;
 }) {
   return (
-    <Pressable style={styles.tabItem}>
+    <Pressable style={styles.tabItem} onPress={onPress} disabled={!onPress}>
       <FontAwesome6
         name={icon}
         iconStyle="solid"
@@ -539,6 +564,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
+  sectionActionButton: {
+    minHeight: 24,
+    justifyContent: 'center',
+    paddingLeft: 12,
+  },
+
   overlayRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -558,10 +589,32 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
+  overlayTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+
   overlayTitle: {
     color: palette.white,
     fontSize: 15,
     fontWeight: '800',
+  },
+
+  overlayStatusBadge: {
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: palette.gold,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    backgroundColor: '#191208',
+  },
+
+  overlayStatusText: {
+    color: palette.goldBright,
+    fontSize: 8,
+    fontWeight: '900',
   },
 
   overlayMeta: {
@@ -580,12 +633,13 @@ const styles = StyleSheet.create({
 
   overlayFutureText: {
     color: palette.goldBright,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '800',
   },
 
   chipRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
     marginTop: 12,
   },
