@@ -20,6 +20,7 @@ type AppIconName =
   | 'clipboard-list'
   | 'ellipsis'
   | 'file-csv'
+  | 'gavel'
   | 'house'
   | 'magnifying-glass'
   | 'photo-film'
@@ -137,7 +138,17 @@ const catalogueLots = rawImportPreview
   .sort((a, b) => b.matchPercent - a.matchPercent)
   .map((lot, index) => ({ ...lot, rank: index + 1 }));
 
-function HomeScreen({ onOpenSales }: { onOpenSales?: () => void }) {
+function HomeScreen({
+  onOpenSales,
+  onOpenShortlist,
+  onOpenActivity,
+  onOpenMore,
+}: {
+  onOpenSales?: () => void;
+  onOpenShortlist?: () => void;
+  onOpenActivity?: () => void;
+  onOpenMore?: () => void;
+}) {
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView
@@ -303,10 +314,10 @@ function HomeScreen({ onOpenSales }: { onOpenSales?: () => void }) {
 
       <View style={styles.tabBar}>
         <TabItem icon="house" label="Dashboard" active />
-        <TabItem icon="sitemap" label="Sales" onPress={onOpenSales} />
-        <TabItem icon="star" label="Shortlist" />
-        <TabItem icon="chart-simple" label="Activity" />
-        <TabItem icon="ellipsis" label="More" />
+        <TabItem icon="gavel" label="Sales" onPress={onOpenSales} />
+        <TabItem icon="star" label="Shortlist" onPress={onOpenShortlist} />
+        <TabItem icon="chart-simple" label="Activity" onPress={onOpenActivity} />
+        <TabItem icon="ellipsis" label="More" onPress={onOpenMore} />
       </View>
     </SafeAreaView>
   );

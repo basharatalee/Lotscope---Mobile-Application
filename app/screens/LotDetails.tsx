@@ -28,7 +28,7 @@ type IconName =
   | 'truck'
   | 'user-group'
   | 'video'
-  | 'circle-nodes'
+  | 'gavel'
   | 'horse-head';
 
 export type LotDetailData = {
@@ -46,6 +46,8 @@ type LotDetailsProps = {
   lot: LotDetailData;
   onBackToLots: () => void;
   onOpenHome?: () => void;
+  onOpenShortlist?: () => void;
+  onOpenMore?: () => void;
 };
 
 const horseHero = require('../../assets/herolot.jpg') as ImageSourcePropType;
@@ -63,7 +65,13 @@ const palette = {
   green: '#48b85d',
 };
 
-function LotDetails({ lot, onBackToLots, onOpenHome }: LotDetailsProps) {
+function LotDetails({
+  lot,
+  onBackToLots,
+  onOpenHome,
+  onOpenShortlist,
+  onOpenMore,
+}: LotDetailsProps) {
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView
@@ -191,7 +199,11 @@ function LotDetails({ lot, onBackToLots, onOpenHome }: LotDetailsProps) {
         </View>
       </ScrollView>
 
-      <BottomTabs onOpenHome={onOpenHome} />
+      <BottomTabs
+        onOpenHome={onOpenHome}
+        onOpenShortlist={onOpenShortlist}
+        onOpenMore={onOpenMore}
+      />
     </SafeAreaView>
   );
 }
@@ -247,14 +259,22 @@ function DetailAction({ icon, label }: { icon: IconName; label: string }) {
   );
 }
 
-function BottomTabs({ onOpenHome }: { onOpenHome?: () => void }) {
+function BottomTabs({
+  onOpenHome,
+  onOpenShortlist,
+  onOpenMore,
+}: {
+  onOpenHome?: () => void;
+  onOpenShortlist?: () => void;
+  onOpenMore?: () => void;
+}) {
   return (
     <View style={styles.tabBar}>
       <TabItem icon="house" label="Home" onPress={onOpenHome} />
       <TabItem icon="gavel" label="Sales" active />
-      <TabItem icon="star" label="Shortlist" />
-      <TabItem icon="circle-nodes" label="Activity" />
-      <TabItem icon="ellipsis" label="More" />
+      <TabItem icon="star" label="Shortlist" onPress={onOpenShortlist} />
+      <TabItem icon="gavel" label="Activity" />
+      <TabItem icon="ellipsis" label="More" onPress={onOpenMore} />
     </View>
   );
 }

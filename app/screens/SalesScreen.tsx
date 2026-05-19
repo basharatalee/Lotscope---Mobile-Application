@@ -31,7 +31,7 @@ type AppIconName =
   | 'sliders'
   | 'star'
   | 'plus'
-  | 'circle-nodes'
+  | 'gavel'
   | 'circle-info'
   | 'horse-head';
 
@@ -179,7 +179,17 @@ const catalogueLots: Lot[] = [
   },
 ];
 
-function SalesScreen({ onOpenHome }: { onOpenHome?: () => void }) {
+function SalesScreen({
+  onOpenHome,
+  onOpenShortlist,
+  onOpenActivity,
+  onOpenMore,
+}: {
+  onOpenHome?: () => void;
+  onOpenShortlist?: () => void;
+  onOpenActivity?: () => void;
+  onOpenMore?: () => void;
+}) {
   const [activeTab, setActiveTab] = useState<SaleTab>('live');
   const [screenMode, setScreenMode] = useState<ScreenMode>('sales');
   const [selectedLot, setSelectedLot] = useState<Lot | null>(null);
@@ -190,6 +200,8 @@ function SalesScreen({ onOpenHome }: { onOpenHome?: () => void }) {
         lot={selectedLot}
         onBackToLots={() => setScreenMode('lots')}
         onOpenHome={onOpenHome}
+        onOpenShortlist={onOpenShortlist}
+        onOpenMore={onOpenMore}
       />
     );
   }
@@ -206,6 +218,9 @@ function SalesScreen({ onOpenHome }: { onOpenHome?: () => void }) {
           setScreenMode('lotDetail');
         }}
         onOpenHome={onOpenHome}
+        onOpenShortlist={onOpenShortlist}
+        onOpenActivity={onOpenActivity}
+        onOpenMore={onOpenMore}
       />
     );
   }
@@ -248,7 +263,12 @@ function SalesScreen({ onOpenHome }: { onOpenHome?: () => void }) {
         )}
       </ScrollView>
 
-      <BottomTabs onOpenHome={onOpenHome} />
+      <BottomTabs
+        onOpenHome={onOpenHome}
+        onOpenShortlist={onOpenShortlist}
+        onOpenActivity={onOpenActivity}
+        onOpenMore={onOpenMore}
+      />
     </SafeAreaView>
   );
 }
@@ -350,10 +370,16 @@ function LotsScreen({
   onBackToSales,
   onOpenLot,
   onOpenHome,
+  onOpenShortlist,
+  onOpenActivity,
+  onOpenMore,
 }: {
   onBackToSales: () => void;
   onOpenLot: (lot: Lot) => void;
   onOpenHome?: () => void;
+  onOpenShortlist?: () => void;
+  onOpenActivity?: () => void;
+  onOpenMore?: () => void;
 }) {
   return (
     <SafeAreaView style={styles.screen}>
@@ -439,7 +465,12 @@ function LotsScreen({
         </Pressable>
       </ScrollView>
 
-      <BottomTabs onOpenHome={onOpenHome} />
+      <BottomTabs
+        onOpenHome={onOpenHome}
+        onOpenShortlist={onOpenShortlist}
+        onOpenActivity={onOpenActivity}
+        onOpenMore={onOpenMore}
+      />
     </SafeAreaView>
   );
 }
@@ -605,14 +636,24 @@ function QuickAction({
   );
 }
 
-function BottomTabs({ onOpenHome }: { onOpenHome?: () => void }) {
+function BottomTabs({
+  onOpenHome,
+  onOpenShortlist,
+  onOpenActivity,
+  onOpenMore,
+}: {
+  onOpenHome?: () => void;
+  onOpenShortlist?: () => void;
+  onOpenActivity?: () => void;
+  onOpenMore?: () => void;
+}) {
   return (
     <View style={styles.tabBar}>
       <TabItem icon="house" label="Home" onPress={onOpenHome} />
       <TabItem icon="gavel" label="Sales" active />
-      <TabItem icon="star" label="Shortlist" />
-      <TabItem icon="circle-nodes" label="Activity" />
-      <TabItem icon="ellipsis" label="More" />
+      <TabItem icon="star" label="Shortlist" onPress={onOpenShortlist} />
+      <TabItem icon="gavel" label="Activity" onPress={onOpenActivity} />
+      <TabItem icon="ellipsis" label="More" onPress={onOpenMore} />
     </View>
   );
 }
