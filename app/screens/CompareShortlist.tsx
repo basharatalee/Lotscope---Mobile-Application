@@ -453,12 +453,17 @@ import {
 } from 'react-native';
 
 import FontAwesome6 from '@react-native-vector-icons/fontawesome6';
+import {
+  SouthportTycoonAnalysis,
+  getEnrichedBroodmareCatalogue,
+} from '../data/southportTycoonAnalysis';
 
 type NavProps = {
   onOpenHome?: () => void;
   onOpenSales?: () => void;
   onOpenActivity?: () => void;
   onOpenMore?: () => void;
+  analysisRows?: SouthportTycoonAnalysis[];
 };
 
 type IconName =
@@ -543,67 +548,28 @@ type IconName =
 
 
 
-  const horses = [
-  {
-    lot: 'Lot 128',
-    name: 'Snitzel x\nLa Dorada',
-    badge: 'Top Opportunity',
-    badgeColor: '#1B5E20',
-
-    racingStyle: 'Early Runner',
-    athleticism: '8/10',
-    scope: '8/10',
-    confirmation: '8/10',
-
-    location: 'Magic Millions\nGold Coast 2025',
-    estimate: '$120k - $150k',
-
+function buildCompareHorses(analysisRows?: SouthportTycoonAnalysis[]) {
+  return getEnrichedBroodmareCatalogue(analysisRows)
+  .filter(lot => lot.analysis)
+  .sort((a, b) => (b.analysis?.rankingScore ?? 0) - (a.analysis?.rankingScore ?? 0))
+  .slice(0, 3)
+  .map(lot => ({
+    lot: `Lot ${lot.lotNumber}`,
+    name: `${lot.mareName}\n${lot.sire}`,
+    badge: lot.analysis?.verdict ?? 'Watch',
+    badgeColor: lot.analysis?.verdict === 'Top Pick' ? '#1B5E20' : '#145A32',
+    racingStyle: `${lot.analysis?.matchRating ?? 0}% Match`,
+    athleticism: `${lot.analysis?.pedigreeStrength ?? 0}`,
+    scope: lot.analysis?.commercialRating ?? 'N/A',
+    confirmation: `${lot.analysis?.rankingScore ?? 0}`,
+    location: 'Magic Millions\nBroodmare Sale',
+    estimate: lot.analysis?.commercialNotes ?? lot.vendor,
     vetReport: true,
     scopeReport: true,
     video: true,
     notes: true,
-  },
-
-  {
-    lot: 'Lot 152',
-    name: 'I Am Invincible x\nVilla Verde',
-    badge: 'Strong Value',
-    badgeColor: '#145A32',
-
-    racingStyle: 'Early Runner',
-    athleticism: '7/10',
-    scope: '8/10',
-    confirmation: '8/10',
-
-    location: 'Inglis Classic\nSydney 2025',
-    estimate: '$200k - $300k',
-
-    vetReport: true,
-    scopeReport: true,
-    video: true,
-    notes: true,
-  },
-
-  {
-    lot: 'Lot 201',
-    name: 'Written Tycoon x\nJolie Bay',
-    badge: 'Strong Racehorse',
-    badgeColor: '#1B5E20',
-
-    racingStyle: 'Midfield',
-    athleticism: '8/10',
-    scope: '8/10',
-    confirmation: '8/10',
-
-    location: 'Magic Millions\nMelbourne 2025',
-    estimate: '$350k - $450k',
-
-    vetReport: true,
-    scopeReport: true,
-    video: true,
-    notes: true,
-  },
-];
+  }));
+}
 
 
 
@@ -622,13 +588,13 @@ type IconName =
 
 
 const leftLabels = [
-  'Buyer\nOpportunity',
-  'Racing\nStyle',
-  'Athleticism',
-  'Scope',
-  'Conformation',
+  'CSV\nVerdict',
+  'ST\nMatch',
+  'Pedigree\nStrength',
+  'Commercial\nRating',
+  'Ranking\nScore',
   'Sale\nLocation',
-  'Vendor\nEstimate',
+  'Commercial\nNotes',
   'Vet Report',
   'Scope',
   'Video',
@@ -640,7 +606,10 @@ export default function CompareShortlist({
   onOpenSales,
   onOpenActivity,
   onOpenMore,
+  analysisRows,
 }: NavProps) {
+  const horses = buildCompareHorses(analysisRows);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>

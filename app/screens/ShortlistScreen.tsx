@@ -11,6 +11,10 @@ import {
 } from 'react-native';
 
 import FontAwesome6 from '@react-native-vector-icons/fontawesome6';
+import {
+  SouthportTycoonAnalysis,
+  getEnrichedBroodmareCatalogue,
+} from '../data/southportTycoonAnalysis';
 
 type NavProps = {
   onOpenHome?: () => void;
@@ -19,6 +23,7 @@ type NavProps = {
   onOpenMore?: () => void;
   onOpenCompare?: () => void;
   onOpenTeam?: () => void;
+  analysisRows?: SouthportTycoonAnalysis[];
 };
 
 type IconName =
@@ -60,48 +65,19 @@ const palette = {
   green: '#48b85d',
 };
 
-const horses: Horse[] = [
-  {
-    id: 1,
-    lot: 'Lot 128',
-    type: 'Br. Colt',
-    pedigree: 'Snitzel x La Dorada',
-    tag: 'Top Opportunity',
-    rating: '8.6 / 10',
-  },
-  {
-    id: 2,
-    lot: 'Lot 201',
-    type: 'Br. Colt',
-    pedigree: 'Written Tycoon x Jolie Bay',
-    tag: 'Strong Racehorse',
-    rating: '8.4 / 10',
-  },
-  {
-    id: 3,
-    lot: 'Lot 152',
-    type: 'B. Filly',
-    pedigree: 'I Am Invincible x Villa Verde',
-    tag: 'Strong Value',
-    rating: '8.0 / 10',
-  },
-  {
-    id: 4,
-    lot: 'Lot 245',
-    type: 'Ch. Filly',
-    pedigree: 'Exceed And Excel x La Luna Rossa',
-    tag: 'Value',
-    rating: '7.8 / 10',
-  },
-  {
-    id: 5,
-    lot: 'Lot 178',
-    type: 'Br. Colt',
-    pedigree: 'Too Darn Hot x Global Choice',
-    tag: 'Value',
-    rating: '7.5 / 10',
-  },
-];
+function buildShortlistHorses(analysisRows?: SouthportTycoonAnalysis[]): Horse[] {
+  return getEnrichedBroodmareCatalogue(analysisRows)
+    .filter(lot => (lot.analysis?.matchRating ?? 0) >= 85)
+    .sort((a, b) => (b.analysis?.rankingScore ?? 0) - (a.analysis?.rankingScore ?? 0))
+    .map((lot, index) => ({
+      id: index + 1,
+      lot: `Lot ${lot.lotNumber}`,
+      type: `${lot.age}yo Broodmare`,
+      pedigree: `${lot.sire} x ${lot.dam}`,
+      tag: lot.analysis?.verdict ?? 'Watch',
+      rating: `${lot.analysis?.matchRating ?? 0}%`,
+    }));
+}
 
 const summaryData = [
   { icon: 'star' as IconName, label: 'Shortlisted', value: '5' },
@@ -252,7 +228,10 @@ function ShortlistScreen({
   onOpenMore,
   onOpenCompare,
   onOpenTeam,
+  analysisRows,
 }: NavProps) {
+  const horses = buildShortlistHorses(analysisRows);
+
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView
@@ -297,7 +276,7 @@ function ShortlistScreen({
         <View style={styles.tabs}>
           <View style={styles.activeTab}>
             <Text style={styles.activeTabText}>
-              Top Picks (5)
+              Top Picks ({horses.filter(item => item.tag === 'Top Pick').length})
             </Text>
           </View>
 

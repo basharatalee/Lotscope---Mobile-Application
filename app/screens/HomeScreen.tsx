@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 
 import FontAwesome6 from '@react-native-vector-icons/fontawesome6';
+import { magicMillionsBroodmareCatalogue } from '../data/southportTycoonAnalysis';
 
 type AppIconName =
   | 'bell'
@@ -46,24 +47,12 @@ const palette = {
   green: '#84c884',
 };
 
-type RawStallionMatchRow = {
-  lotNumber: number;
-  horseName: string;
-  sex: 'Colt' | 'Filly';
-  sire: string;
-  dam: string;
-  matchPercent: number;
-  pedigreeScore?: number;
-  matingPedigreeStrength?: number;
-};
-
 type CatalogueLot = {
   lotNumber: number;
   title: string;
   subtitle: string;
-  matchPercent: number;
-  matchLabel: 'Elite Match' | 'Strong Match' | 'Watch';
-  workflowTag: 'Top Pick' | 'Value' | 'Watch';
+  vendor: string;
+  age: number;
   rank: number;
 };
 
@@ -71,84 +60,53 @@ const activeOverlay = {
   id: 'southport-tycoon',
   name: 'Southport Tycoon',
   status: 'ACTIVE',
-  rankedLots: '126 Lots Ranked',
-  insight: '23 elite pedigree matches identified',
+  rankedLots: 'MM Catalogue',
+  insight: 'Ready to overlay mating intelligence on broodmare lots',
 };
 
-const rawImportPreview: RawStallionMatchRow[] = [
-  {
-    lotNumber: 21,
-    horseName: 'Unnamed Filly',
-    sex: 'Filly',
-    sire: 'Written Tycoon',
-    dam: 'Gold Coast Dream',
-    matchPercent: 96,
-    pedigreeScore: 91,
-    matingPedigreeStrength: 89,
-  },
-  {
-    lotNumber: 47,
-    horseName: 'Bay Colt',
-    sex: 'Colt',
-    sire: 'I Am Invincible',
-    dam: 'Harbour Lights',
-    matchPercent: 92,
-    pedigreeScore: 88,
-    matingPedigreeStrength: 85,
-  },
-  {
-    lotNumber: 128,
-    horseName: 'Chestnut Filly',
-    sex: 'Filly',
-    sire: 'Snitzel',
-    dam: 'Northern Star',
-    matchPercent: 87,
-    pedigreeScore: 82,
-  },
-];
-
-function transformRawHorse(row: RawStallionMatchRow): CatalogueLot {
-  const matchLabel =
-    row.matchPercent >= 94
-      ? 'Elite Match'
-      : row.matchPercent >= 88
-        ? 'Strong Match'
-        : 'Watch';
-
-  const workflowTag =
-    row.matchPercent >= 94
-      ? 'Top Pick'
-      : row.pedigreeScore && row.pedigreeScore >= 86
-        ? 'Value'
-        : 'Watch';
-
+function transformCatalogueLot(
+  lot: (typeof magicMillionsBroodmareCatalogue)[number],
+  index: number,
+): CatalogueLot {
   return {
-    lotNumber: row.lotNumber,
-    title: row.horseName,
-    subtitle: `${row.sex} | ${row.sire} x ${row.dam}`,
-    matchPercent: row.matchPercent,
-    matchLabel,
-    workflowTag,
-    rank: 0,
+    lotNumber: lot.lotNumber,
+    title: lot.mareName,
+    subtitle: `${lot.sire} x ${lot.dam}`,
+    vendor: lot.vendor,
+    age: lot.age,
+    rank: index + 1,
   };
 }
 
-const catalogueLots = rawImportPreview
-  .map(transformRawHorse)
-  .sort((a, b) => b.matchPercent - a.matchPercent)
-  .map((lot, index) => ({ ...lot, rank: index + 1 }));
+const catalogueLots = magicMillionsBroodmareCatalogue.map(transformCatalogueLot);
 
 function HomeScreen({
   onOpenSales,
   onOpenShortlist,
   onOpenActivity,
   onOpenMore,
+  onUploadCsv,
+  csvImportStatus,
 }: {
   onOpenSales?: () => void;
   onOpenShortlist?: () => void;
   onOpenActivity?: () => void;
   onOpenMore?: () => void;
+  onUploadCsv?: () => void;
+  csvImportStatus?: {
+    fileName?: string;
+    rowCount: number;
+    state: 'sample' | 'loaded' | 'error';
+    message?: string;
+  };
 }) {
+  const csvStatusText =
+    csvImportStatus?.state === 'loaded'
+      ? `${csvImportStatus.rowCount} analysis rows loaded from ${csvImportStatus.fileName ?? 'CSV'}`
+      : csvImportStatus?.state === 'error'
+        ? csvImportStatus.message ?? 'CSV import failed'
+        : 'Sample Southport Tycoon overlay active';
+
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView
@@ -270,7 +228,7 @@ function HomeScreen({
         </View>
 
         <Panel>
-          <SectionHeader title="TOP MATCH HORSES" action="Sort: Match %" />
+          <SectionHeader title="MM BROODMARE SALE" action="Open Sale" onActionPress={onOpenSales} />
 
           {catalogueLots.map(lot => (
             <LotMatchRow key={lot.lotNumber} lot={lot} />
@@ -287,7 +245,10 @@ function HomeScreen({
         <Panel>
           <SectionHeader title="CSV IMPORT" action="Temporary" />
 
-          <Pressable style={styles.uploadButton}>
+          <Pressable
+            style={styles.uploadButton}
+            onPress={onUploadCsv}
+            disabled={!onUploadCsv}>
             <View style={styles.uploadIcon}>
               <FontAwesome6
                 name="file-csv"
@@ -298,9 +259,7 @@ function HomeScreen({
             </View>
             <View style={styles.uploadCopy}>
               <Text style={styles.uploadTitle}>Upload Stallion Match CSV</Text>
-              <Text style={styles.uploadMeta}>
-                Raw import {'->'} workflow scoring {'->'} UI mapping
-              </Text>
+              <Text style={styles.uploadMeta}>{csvStatusText}</Text>
             </View>
             <FontAwesome6
               name="chevron-right"
@@ -398,10 +357,8 @@ function MetricCard({
 }
 
 function LotMatchRow({ lot }: { lot: CatalogueLot }) {
-  const isElite = lot.matchLabel === 'Elite Match';
-
   return (
-    <View style={[styles.lotRow, isElite ? styles.lotRowElite : null]}>
+    <View style={styles.lotRow}>
       <View style={styles.rankBadge}>
         <Text style={styles.rankText}>#{lot.rank}</Text>
       </View>
@@ -410,16 +367,14 @@ function LotMatchRow({ lot }: { lot: CatalogueLot }) {
         <Text style={styles.lotTitle}>Lot {lot.lotNumber} | {lot.title}</Text>
         <Text numberOfLines={1} style={styles.lotSubtitle}>{lot.subtitle}</Text>
         <View style={styles.tagRow}>
-          <Text style={[styles.matchTag, isElite ? styles.eliteTag : null]}>
-            {lot.matchLabel}
-          </Text>
-          <Text style={styles.workflowTag}>{lot.workflowTag}</Text>
+          <Text style={styles.matchTag}>Magic Millions</Text>
+          <Text style={styles.workflowTag}>{lot.vendor}</Text>
         </View>
       </View>
 
       <View style={styles.matchPercentBadge}>
-        <Text style={styles.matchPercent}>{lot.matchPercent}%</Text>
-        <Text style={styles.matchLabel}>Match</Text>
+        <Text style={styles.matchPercent}>{lot.age}</Text>
+        <Text style={styles.matchLabel}>Age</Text>
       </View>
     </View>
   );

@@ -89,6 +89,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { InteractionManager, StatusBar, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import {
+  errorCodes,
+  isErrorWithCode,
+  pick,
+  types,
+} from '@react-native-documents/picker';
 
 import SplashScreen from './app/screens/SplashScreen.tsx';
 import LoginScreen from './app/screens/LoginScreen.tsx';
@@ -100,6 +106,11 @@ import ActivityScreen from './app/screens/ActivityScreen.tsx';
 import OnlineReviewQueue from './app/screens/OnlineReviewQueue.tsx';
 import OwnershipTrackingScreen from './app/screens/OwnershipTrackingScreen.tsx';
 import SaleTeamServicesHubScreen from './app/screens/SaleTeamServicesHubScreen.tsx';
+import {
+  SouthportTycoonAnalysis,
+  getDefaultSouthportTycoonAnalysis,
+  parseSouthportTycoonCsv,
+} from './app/data/southportTycoonAnalysis.ts';
 
 const palette = {
   black: '#020406',
@@ -135,6 +146,18 @@ const CachedSaleTeamServicesHubScreen = React.memo(SaleTeamServicesHubScreen);
 function App() {
   const [showSplash, setShowSplash] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [analysisRows, setAnalysisRows] = useState<SouthportTycoonAnalysis[]>(
+    () => getDefaultSouthportTycoonAnalysis(),
+  );
+  const [csvImportStatus, setCsvImportStatus] = useState<{
+    fileName?: string;
+    rowCount: number;
+    state: 'sample' | 'loaded' | 'error';
+    message?: string;
+  }>({
+    rowCount: getDefaultSouthportTycoonAnalysis().length,
+    state: 'sample',
+  });
   const [activeScreen, setActiveScreen] = useState<AppScreen>('home');
   const [mountedScreens, setMountedScreens] = useState<Set<AppScreen>>(
     () => new Set(['home']),
@@ -174,6 +197,62 @@ function App() {
     setIsLoggedIn(true);
     openHome();
   }, [openHome]);
+
+  const handleUploadCsv = useCallback(async () => {
+    try {
+      const [file] = await pick({
+        type: [types.allFiles],
+        allowMultiSelection: false,
+      });
+
+      const fileName = file.name ?? 'selected file';
+      const looksLikeCsv =
+        fileName.toLowerCase().endsWith('.csv') ||
+        file.type?.toLowerCase().includes('csv') ||
+        file.type?.toLowerCase().includes('text');
+
+      if (!looksLikeCsv) {
+        setCsvImportStatus({
+          rowCount: 0,
+          state: 'error',
+          message: 'Please select a CSV file exported from Stallion Match.',
+        });
+        return;
+      }
+
+      const csvText = await fetch(file.uri).then(response => response.text());
+      const parsedRows = parseSouthportTycoonCsv(csvText);
+
+      if (parsedRows.length === 0) {
+        setCsvImportStatus({
+          rowCount: 0,
+          state: 'error',
+          message: 'No valid Southport Tycoon analysis rows found.',
+        });
+        return;
+      }
+
+      setAnalysisRows(parsedRows);
+      setCsvImportStatus({
+        fileName,
+        rowCount: parsedRows.length,
+        state: 'loaded',
+      });
+    } catch (error) {
+      if (
+        isErrorWithCode(error) &&
+        error.code === errorCodes.OPERATION_CANCELED
+      ) {
+        return;
+      }
+
+      setCsvImportStatus({
+        rowCount: 0,
+        state: 'error',
+        message: 'CSV import failed. Please check the file format.',
+      });
+    }
+  }, []);
 
   useEffect(() => {
     const splashTimer = setTimeout(() => {
@@ -217,6 +296,8 @@ function App() {
                 onOpenShortlist={openShortlist}
                 onOpenActivity={openActivity}
                 onOpenMore={openMore}
+                onUploadCsv={handleUploadCsv}
+                csvImportStatus={csvImportStatus}
               />
             </View>
           ) : null}
@@ -228,6 +309,7 @@ function App() {
                 onOpenShortlist={openShortlist}
                 onOpenActivity={openActivity}
                 onOpenMore={openMore}
+                analysisRows={analysisRows}
               />
             </View>
           ) : null}
@@ -240,6 +322,7 @@ function App() {
                 onOpenCompare={openCompareShortlist}
                 onOpenActivity={openActivity}
                 onOpenMore={openMore}
+                analysisRows={analysisRows}
               />
             </View>
           ) : null}
@@ -256,6 +339,7 @@ function App() {
                 onOpenSales={openSales}
                 onOpenActivity={openActivity}
                 onOpenMore={openMore}
+                analysisRows={analysisRows}
               />
             </View>
           ) : null}

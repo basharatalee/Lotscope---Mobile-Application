@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 
 import FontAwesome6 from '@react-native-vector-icons/fontawesome6';
+import { SouthportTycoonAnalysis } from '../data/southportTycoonAnalysis';
 
 type IconName =
   | 'arrow-left'
@@ -33,13 +34,19 @@ type IconName =
 
 export type LotDetailData = {
   lotNumber: number;
+  mareName?: string;
   type: string;
   sire: string;
   dam: string;
+  age?: number;
+  vendor?: string;
+  cataloguePedigree?: string;
+  photos?: number;
   priceGuide: string;
   vendorThinks: string;
   privacy: string;
   warning: string;
+  analysis?: SouthportTycoonAnalysis;
 };
 
 type LotDetailsProps = {
@@ -117,6 +124,9 @@ function LotDetails({
             <View style={styles.titleCopy}>
               <Text style={styles.lotTitle}>Lot {lot.lotNumber}</Text>
               <Text style={styles.lotType}>{lot.type}</Text>
+              {lot.mareName ? (
+                <Text style={styles.lotType}>{lot.mareName}</Text>
+              ) : null}
               <Text style={styles.pedigree}>{lot.sire} x {lot.dam}</Text>
             </View>
             <FontAwesome6
@@ -155,7 +165,7 @@ function LotDetails({
 
         <View style={styles.priceSection}>
           <View style={styles.priceHeader}>
-            <Text style={styles.priceTitle}>PRIVATE VENDOR PRICE GUIDE</Text>
+            <Text style={styles.priceTitle}>MAGIC MILLIONS CATALOGUE</Text>
             <View style={styles.privateBadge}>
               <FontAwesome6
                 name="lock"
@@ -168,16 +178,43 @@ function LotDetails({
           </View>
 
           <View style={styles.vendorBox}>
-            <Text style={styles.vendorLabel}>Vendor thinks:</Text>
+            <Text style={styles.vendorLabel}>Vendor:</Text>
             <FontAwesome6
               name="lock"
               iconStyle="solid"
               size={9}
               color={palette.goldBright}
             />
-            <Text style={styles.vendorPrice}>{lot.priceGuide}</Text>
+            <Text style={styles.vendorPrice}>{lot.vendor ?? lot.priceGuide}</Text>
           </View>
         </View>
+
+        {lot.analysis ? (
+          <View style={styles.analysisSection}>
+            <Text style={styles.priceTitle}>SOUTHPORT TYCOON MATCH</Text>
+            <View style={styles.analysisGrid}>
+              <AnalysisMetric label="Match" value={`${lot.analysis.matchRating}%`} />
+              <AnalysisMetric label="Pedigree" value={`${lot.analysis.pedigreeStrength}`} />
+              <AnalysisMetric label="Commercial" value={lot.analysis.commercialRating} />
+              <AnalysisMetric label="Rank Score" value={`${lot.analysis.rankingScore}`} />
+            </View>
+
+            <Text style={styles.analysisTitle}>PEDIGREE ANALYSIS</Text>
+            <Text style={styles.analysisText}>{lot.cataloguePedigree}</Text>
+
+            <Text style={styles.analysisTitle}>DOSAGE BREAKDOWN</Text>
+            <Text style={styles.analysisText}>{lot.analysis.dosageProfile}</Text>
+
+            <Text style={styles.analysisTitle}>COMMERCIAL NOTES</Text>
+            <Text style={styles.analysisText}>{lot.analysis.commercialNotes}</Text>
+
+            <Text style={styles.analysisTitle}>AI INSIGHTS</Text>
+            <Text style={styles.analysisText}>{lot.analysis.aiInsights}</Text>
+
+            <Text style={styles.analysisTitle}>RANKING POSITION</Text>
+            <Text style={styles.analysisText}>{lot.analysis.verdict}</Text>
+          </View>
+        ) : null}
 
         <View style={styles.actionGrid}>
           <DetailAction icon="stethoscope" label="Request Vet" />
@@ -256,6 +293,15 @@ function DetailAction({ icon, label }: { icon: IconName; label: string }) {
       />
       <Text style={styles.actionText}>{label}</Text>
     </Pressable>
+  );
+}
+
+function AnalysisMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.analysisMetric}>
+      <Text style={styles.analysisMetricValue}>{value}</Text>
+      <Text style={styles.analysisMetricLabel}>{label}</Text>
+    </View>
   );
 }
 
@@ -532,6 +578,55 @@ const styles = StyleSheet.create({
     color: palette.goldBright,
     fontSize: 11,
     fontWeight: '800',
+  },
+
+  analysisSection: {
+    paddingHorizontal: 14,
+    paddingTop: 12,
+  },
+
+  analysisGrid: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 8,
+    marginBottom: 10,
+  },
+
+  analysisMetric: {
+    flex: 1,
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: palette.border,
+    backgroundColor: '#101318',
+  },
+
+  analysisMetricValue: {
+    color: palette.goldBright,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+
+  analysisMetricLabel: {
+    color: palette.muted,
+    fontSize: 8,
+    marginTop: 4,
+  },
+
+  analysisTitle: {
+    color: palette.goldBright,
+    fontSize: 10,
+    fontWeight: '800',
+    marginTop: 10,
+  },
+
+  analysisText: {
+    color: palette.muted,
+    fontSize: 10,
+    lineHeight: 15,
+    marginTop: 5,
   },
 
   actionGrid: {

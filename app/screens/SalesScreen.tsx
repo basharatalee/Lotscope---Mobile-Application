@@ -13,6 +13,11 @@ import {
 
 import FontAwesome6 from '@react-native-vector-icons/fontawesome6';
 import LotDetails from './LotDetails';
+import {
+  EnrichedBroodmareLot,
+  SouthportTycoonAnalysis,
+  getEnrichedBroodmareCatalogue,
+} from '../data/southportTycoonAnalysis';
 
 type AppIconName =
   | 'bell'
@@ -67,9 +72,14 @@ type ScreenMode = 'sales' | 'lots' | 'lotDetail';
 
 type Lot = {
   lotNumber: number;
+  mareName: string;
   type: string;
   sire: string;
   dam: string;
+  age: number;
+  vendor: string;
+  cataloguePedigree: string;
+  photos: number;
   tags: string[];
   insight: string;
   insightTone: 'green' | 'gold' | 'red';
@@ -79,7 +89,7 @@ type Lot = {
   vendorThinks: string;
   privacy: string;
   warning: string;
-};
+} & Pick<EnrichedBroodmareLot, 'analysis'>;
 
 const onlineSales: Sale[] = [
   {
@@ -120,79 +130,47 @@ const onlineSales: Sale[] = [
   },
 ];
 
-const catalogueLots: Lot[] = [
-  {
-    lotNumber: 128,
-    type: 'Br. Colt',
-    sire: 'Snitzel',
-    dam: 'La Dorada',
-    tags: ['Early Runner', 'Athletic'],
-    insight: 'Top Opportunity',
-    insightTone: 'green',
-    shortlisted: true,
-    priceGuide: '$120k - $150k',
-    vendorThinks: 'Athletic colt with clean x-rays and early runner profile.',
+function buildCatalogueLots(analysisRows?: SouthportTycoonAnalysis[]): Lot[] {
+  return getEnrichedBroodmareCatalogue(analysisRows).map(lot => {
+  const verdict = lot.analysis?.verdict ?? 'Watch';
+  const insightTone =
+    verdict === 'Top Pick' ? 'green' : verdict === 'Value' ? 'gold' : 'red';
+
+  return {
+    ...lot,
+    type: `${lot.age}yo Broodmare`,
+    tags: lot.analysis?.suggestedTags.slice(0, 2) ?? ['MM Catalogue'],
+    insight: verdict,
+    insightTone,
+    marker: insightTone === 'gold' ? 'gold' : undefined,
+    shortlisted: lot.analysis ? lot.analysis.matchRating >= 90 : false,
+    priceGuide: lot.analysis
+      ? `${lot.analysis.commercialRating} Commercial Rating`
+      : 'CSV analysis pending',
+    vendorThinks: lot.analysis?.commercialNotes ?? lot.cataloguePedigree,
     privacy: 'Private to you and your team',
-    warning: 'Horses must be inspected before adding to shortlist.',
-  },
-  {
-    lotNumber: 152,
-    type: 'B. Filly',
-    sire: 'I Am Invincible',
-    dam: 'Villa Verde',
-    tags: ['Value', 'Athletic'],
-    insight: 'Strong Value',
-    insightTone: 'green',
-    marker: 'green',
-    priceGuide: '$80k - $110k',
-    vendorThinks: 'Good walking filly with strength through shoulder.',
-    privacy: 'Private to you and your team',
-    warning: 'Review scope and vet report before bidding.',
-  },
-  {
-    lotNumber: 201,
-    type: 'Br. Colt',
-    sire: 'Written Tycoon',
-    dam: 'Jolie Bay',
-    tags: ['Early Type', 'Speed'],
-    insight: 'Worth Inspection',
-    insightTone: 'gold',
-    marker: 'gold',
-    priceGuide: '$95k - $130k',
-    vendorThinks: 'Fast family, compact type, worth a close physical inspection.',
-    privacy: 'Private to you and your team',
-    warning: 'Confirm maturity and knee notes with your trainer.',
-  },
-  {
-    lotNumber: 245,
-    type: 'Ch. Filly',
-    sire: 'Exceed And Excel',
-    dam: 'La Luna Rossa',
-    tags: ['Value', 'Vet'],
-    insight: 'Consider',
-    insightTone: 'red',
-    marker: 'red',
-    priceGuide: '$45k - $65k',
-    vendorThinks: 'Late maturing filly with upside if bought at value.',
-    privacy: 'Private to you and your team',
-    warning: 'Vet notes should be checked before any shortlist decision.',
-  },
-];
+    warning: 'CSV intelligence enriches this Magic Millions catalogue lot; it does not create a new sale horse.',
+  };
+  });
+}
 
 function SalesScreen({
   onOpenHome,
   onOpenShortlist,
   onOpenActivity,
   onOpenMore,
+  analysisRows,
 }: {
   onOpenHome?: () => void;
   onOpenShortlist?: () => void;
   onOpenActivity?: () => void;
   onOpenMore?: () => void;
+  analysisRows?: SouthportTycoonAnalysis[];
 }) {
   const [activeTab, setActiveTab] = useState<SaleTab>('live');
   const [screenMode, setScreenMode] = useState<ScreenMode>('sales');
   const [selectedLot, setSelectedLot] = useState<Lot | null>(null);
+  const catalogueLots = buildCatalogueLots(analysisRows);
 
   if (screenMode === 'lotDetail' && selectedLot) {
     return (
@@ -221,6 +199,7 @@ function SalesScreen({
         onOpenShortlist={onOpenShortlist}
         onOpenActivity={onOpenActivity}
         onOpenMore={onOpenMore}
+        catalogueLots={catalogueLots}
       />
     );
   }
@@ -373,6 +352,7 @@ function LotsScreen({
   onOpenShortlist,
   onOpenActivity,
   onOpenMore,
+  catalogueLots,
 }: {
   onBackToSales: () => void;
   onOpenLot: (lot: Lot) => void;
@@ -380,6 +360,7 @@ function LotsScreen({
   onOpenShortlist?: () => void;
   onOpenActivity?: () => void;
   onOpenMore?: () => void;
+  catalogueLots: Lot[];
 }) {
   return (
     <SafeAreaView style={styles.screen}>
@@ -393,7 +374,7 @@ function LotsScreen({
             size={13}
             color={palette.goldBright}
           />
-          <Text style={styles.searchPlaceholder}>Ask Lotscope or search lots</Text>
+          <Text style={styles.searchPlaceholder}>Ask Lotscope or search broodmares</Text>
           <FontAwesome6
             name="microphone"
             iconStyle="solid"
@@ -431,7 +412,7 @@ function LotsScreen({
         </View>
 
         <View style={styles.lotCountRow}>
-          <Text style={styles.lotCountText}>1,123 lots</Text>
+          <Text style={styles.lotCountText}>Magic Millions broodmare catalogue</Text>
           <View style={styles.buyerInsightRow}>
             <Text style={styles.buyerInsightText}>Buyer Insights</Text>
             <FontAwesome6
@@ -571,7 +552,7 @@ function LotCatalogueRow({ lot, onPress }: { lot: Lot; onPress: () => void }) {
 
       <View style={styles.catalogueCopy}>
         <View style={styles.catalogueTitleRow}>
-          <Text style={styles.catalogueTitle}>Lot {lot.lotNumber}</Text>
+        <Text style={styles.catalogueTitle}>Lot {lot.lotNumber}</Text>
           {lot.shortlisted ? (
             <FontAwesome6
               name="star"
@@ -588,10 +569,16 @@ function LotCatalogueRow({ lot, onPress }: { lot: Lot; onPress: () => void }) {
             </View>
           ) : null}
         </View>
-        <Text style={styles.catalogueType}>{lot.type}</Text>
+        <Text style={styles.catalogueType}>{lot.mareName}</Text>
         <Text numberOfLines={1} style={styles.cataloguePedigree}>
           {lot.sire} x {lot.dam}
         </Text>
+
+        {lot.analysis ? (
+          <Text style={styles.cataloguePedigree}>
+            Match {lot.analysis.matchRating}% | Pedigree {lot.analysis.pedigreeStrength}
+          </Text>
+        ) : null}
 
         <View style={styles.catalogueTagRow}>
           {lot.tags.map(tag => (
