@@ -148,19 +148,19 @@
 //               </View>
 
 //               <View style={styles.iconCell}>
-//                 <Text style={styles.greenIcon}>●</Text>
+//                 <FontAwesome6`r`n                  name="circle-check"`r`n                  iconStyle="solid"`r`n                  size={16}`r`n                  color="#20C05C"`r`n                />
 //               </View>
 
 //               <View style={styles.iconCell}>
-//                 <Text style={styles.greenIcon}>●</Text>
+//                 <FontAwesome6`r`n                  name="circle-check"`r`n                  iconStyle="solid"`r`n                  size={16}`r`n                  color="#20C05C"`r`n                />
 //               </View>
 
 //               <View style={styles.iconCell}>
-//                 <Text style={styles.videoIcon}>▶</Text>
+//                 <View style={styles.squareIcon}>`r`n                  <FontAwesome6`r`n                    name="play"`r`n                    iconStyle="solid"`r`n                    size={11}`r`n                    color={GOLD}`r`n                  />`r`n                </View>
 //               </View>
 
 //               <View style={styles.iconCell}>
-//                 <Text style={styles.noteIcon}>✎</Text>
+//                 <View style={styles.squareIcon}>`r`n                  <FontAwesome6`r`n                    name="pen"`r`n                    iconStyle="solid"`r`n                    size={11}`r`n                    color={GOLD}`r`n                  />`r`n                </View>
 //               </View>
 //             </View>
 //           ))}
@@ -461,6 +461,7 @@ import {
 type NavProps = {
   onOpenHome?: () => void;
   onOpenSales?: () => void;
+  onOpenShortlist?: () => void;
   onOpenActivity?: () => void;
   onOpenMore?: () => void;
   analysisRows?: SouthportTycoonAnalysis[];
@@ -550,20 +551,22 @@ type IconName =
 
 function buildCompareHorses(analysisRows?: SouthportTycoonAnalysis[]) {
   return getEnrichedBroodmareCatalogue(analysisRows)
-  .filter(lot => lot.analysis)
-  .sort((a, b) => (b.analysis?.rankingScore ?? 0) - (a.analysis?.rankingScore ?? 0))
-  .slice(0, 3)
-  .map(lot => ({
+    .filter(lot => lot.analysis)
+    .sort((a, b) => (b.analysis?.rankingScore ?? 0) - (a.analysis?.rankingScore ?? 0))
+    .slice(0, 3)
+    .map(lot => ({
     lot: `Lot ${lot.lotNumber}`,
     name: `${lot.mareName}\n${lot.sire}`,
     badge: lot.analysis?.verdict ?? 'Watch',
     badgeColor: lot.analysis?.verdict === 'Top Pick' ? '#1B5E20' : '#145A32',
     racingStyle: `${lot.analysis?.matchRating ?? 0}% Match`,
     athleticism: `${lot.analysis?.pedigreeStrength ?? 0}`,
-    scope: lot.analysis?.commercialRating ?? 'N/A',
-    confirmation: `${lot.analysis?.rankingScore ?? 0}`,
+    age: `${lot.age}yo`,
+    vendor: lot.vendor,
+    dosage: lot.analysis?.dosageProfile ?? 'Not supplied',
+    buyerNotes: lot.analysis?.buyerNotes ?? 'Decision note pending',
+    commercial: lot.analysis?.commercialRating ?? 'N/A',
     location: 'Magic Millions\nBroodmare Sale',
-    estimate: lot.analysis?.commercialNotes ?? lot.vendor,
     vetReport: true,
     scopeReport: true,
     video: true,
@@ -588,13 +591,14 @@ function buildCompareHorses(analysisRows?: SouthportTycoonAnalysis[]) {
 
 
 const leftLabels = [
-  'CSV\nVerdict',
   'ST\nMatch',
   'Pedigree\nStrength',
+  'Age',
+  'Vendor',
+  'Dosage\nProfile',
+  'Buyer\nNotes',
   'Commercial\nRating',
-  'Ranking\nScore',
   'Sale\nLocation',
-  'Commercial\nNotes',
   'Vet Report',
   'Scope',
   'Video',
@@ -604,6 +608,7 @@ const leftLabels = [
 export default function CompareShortlist({
   onOpenHome,
   onOpenSales,
+  onOpenShortlist,
   onOpenActivity,
   onOpenMore,
   analysisRows,
@@ -613,7 +618,7 @@ export default function CompareShortlist({
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Pressable style={styles.backButton}>
+        <Pressable style={styles.backButton} onPress={onOpenShortlist}>
           <FontAwesome6
             name="arrow-left"
             iconStyle="solid"
@@ -683,81 +688,6 @@ export default function CompareShortlist({
 
 
 
-                <View style={styles.valueCell}>
-  <Text style={styles.valueText}>
-    {horse.racingStyle}
-  </Text>
-</View>
-
-<View style={styles.valueCell}>
-  <Text style={styles.valueText}>
-    {horse.athleticism}
-  </Text>
-</View>
-
-<View style={styles.valueCell}>
-  <Text style={styles.valueText}>
-    {horse.scope}
-  </Text>
-</View>
-
-<View style={styles.valueCell}>
-  <Text style={styles.valueText}>
-    {horse.confirmation}
-  </Text>
-</View>
-
-<View style={styles.valueCell}>
-  <Text style={styles.valueText}>
-    {horse.location}
-  </Text>
-</View>
-
-<View style={styles.valueCell}>
-  <Text style={styles.priceText}>
-    {horse.estimate}
-  </Text>
-</View>
-
-<View style={styles.iconCell}>
-  <FontAwesome6
-    name="circle-check"
-    iconStyle="solid"
-    size={16}
-    color="#20C05C"
-  />
-</View>
-
-<View style={styles.iconCell}>
-  <FontAwesome6
-    name="circle-check"
-    iconStyle="solid"
-    size={16}
-    color="#20C05C"
-  />
-</View>
-
-<View style={styles.iconCell}>
-  <View style={styles.squareIcon}>
-    <FontAwesome6
-      name="play"
-      iconStyle="solid"
-      size={11}
-      color={GOLD}
-    />
-  </View>
-</View>
-
-<View style={styles.iconCell}>
-  <View style={styles.squareIcon}>
-    <FontAwesome6
-      name="pen"
-      iconStyle="solid"
-      size={11}
-      color={GOLD}
-    />
-  </View>
-</View>
 
 
 
@@ -768,6 +698,10 @@ export default function CompareShortlist({
 
 
 
+
+              <View style={styles.valueCell}>
+                <Text style={styles.valueText}>{horse.racingStyle}</Text>
+              </View>
 
               <View style={styles.valueCell}>
                 <Text style={styles.valueText}>
@@ -776,39 +710,67 @@ export default function CompareShortlist({
               </View>
 
               <View style={styles.valueCell}>
-                <Text style={styles.valueText}>{horse.scope}</Text>
+                <Text style={styles.valueText}>{horse.age}</Text>
               </View>
 
               <View style={styles.valueCell}>
-                <Text style={styles.valueText}>
-                  {horse.confirmation}
-                </Text>
+                <Text style={styles.valueText}>{horse.vendor}</Text>
+              </View>
+
+              <View style={styles.valueCell}>
+                <Text style={styles.valueText}>{horse.dosage}</Text>
+              </View>
+
+              <View style={styles.valueCell}>
+                <Text style={styles.valueText}>{horse.buyerNotes}</Text>
+              </View>
+
+              <View style={styles.valueCell}>
+                <Text style={styles.priceText}>{horse.commercial}</Text>
               </View>
 
               <View style={styles.valueCell}>
                 <Text style={styles.valueText}>{horse.location}</Text>
               </View>
 
-              <View style={styles.valueCell}>
-                <Text style={styles.priceText}>
-                  {horse.estimate}
-                </Text>
+              <View style={styles.iconCell}>
+                <FontAwesome6
+                  name="circle-check"
+                  iconStyle="solid"
+                  size={16}
+                  color="#20C05C"
+                />
               </View>
 
               <View style={styles.iconCell}>
-                <Text style={styles.greenIcon}>●</Text>
+                <FontAwesome6
+                  name="circle-check"
+                  iconStyle="solid"
+                  size={16}
+                  color="#20C05C"
+                />
               </View>
 
               <View style={styles.iconCell}>
-                <Text style={styles.greenIcon}>●</Text>
+                <View style={styles.squareIcon}>
+                  <FontAwesome6
+                    name="play"
+                    iconStyle="solid"
+                    size={11}
+                    color={GOLD}
+                  />
+                </View>
               </View>
 
               <View style={styles.iconCell}>
-                <Text style={styles.videoIcon}>▶</Text>
-              </View>
-
-              <View style={styles.iconCell}>
-                <Text style={styles.noteIcon}>✎</Text>
+                <View style={styles.squareIcon}>
+                  <FontAwesome6
+                    name="pen"
+                    iconStyle="solid"
+                    size={11}
+                    color={GOLD}
+                  />
+                </View>
               </View>
             </View>
           ))}
@@ -1535,3 +1497,4 @@ const styles = StyleSheet.create({
   justifyContent: 'center',
 },
 });
+

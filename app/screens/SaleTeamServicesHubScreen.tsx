@@ -187,24 +187,7 @@ export default function SaleTeamServicesHubScreen({
           <QuickAction icon="clipboard-list" label="Team\nBriefing" />
         </View>
 
-        <View style={styles.requestCard}>
-          <Image source={horseHero} resizeMode="cover" style={styles.requestImage} />
-          <View style={styles.requestCopy}>
-            <Text style={styles.requestTitle}>Need something else?</Text>
-            <Text style={styles.requestText}>
-              Tell us what you need and we'll handle the rest.
-            </Text>
-            <Pressable style={styles.makeRequestButton}>
-              <Text style={styles.makeRequestText}>Make a Request</Text>
-              <FontAwesome6
-                name="chevron-right"
-                iconStyle="solid"
-                size={10}
-                color={palette.goldBright}
-              />
-            </Pressable>
-          </View>
-        </View>
+        
       </ScrollView>
 
       <BottomTabs

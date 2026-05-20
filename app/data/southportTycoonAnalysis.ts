@@ -16,12 +16,17 @@ export type SouthportTycoonAnalysis = {
   matchRating: number;
   pedigreeStrength: number;
   dosageProfile: string;
+  speedScore?: number;
+  classicScore?: number;
+  staminaScore?: number;
   commercialRating: string;
   suggestedTags: string[];
   rankingScore: number;
   verdict: Verdict;
   commercialNotes: string;
   aiInsights: string;
+  stallionMatchUrl?: string;
+  buyerNotes?: string;
 };
 
 export type EnrichedBroodmareLot = BroodmareLot & {
@@ -71,11 +76,11 @@ export const magicMillionsBroodmareCatalogue: BroodmareLot[] = [
   },
 ];
 
-const southportTycoonCsv = `Lot Number,Southport Tycoon Match Rating,Pedigree Strength Score,Dosage/Profile,Commercial Rating,Suggested Tags,Ranking Score,Verdict,Commercial Notes,AI Insights
-214,92,88,Speed x Classic,A+,"ST Compatible; Top Pick; Commercial",94,Top Pick,"High commercial mating appeal with strong yearling-market profile.","Best blend of speed, residual pedigree and sale-ring upside."
-228,86,84,Speed Reinforcement,A,"ST Compatible; Value",87,Value,"Good nick profile and strong physical compatibility markers.","Value mare with enough commercial strength for shortlist review."
-245,79,74,Sprint Balance,B,"Watch; Physical Review",76,Watch,"Commercial enough if bought at the right level.","Useful family, but mating score trails the leading mares."
-302,91,90,Classic Upgrade,A+,"ST Compatible; Pedigree Strength",92,Top Pick,"Pedigree depth gives the mating a high-quality residual angle.","Strong broodmare profile for Southport Tycoon with ranking upside."`;
+const southportTycoonCsv = `Lot Number,Southport Tycoon Match Rating,Pedigree Strength Score,Dosage/Profile,Speed Score,Classic Score,Stamina Score,Commercial Rating,Suggested Tags,Ranking Score,Verdict,Commercial Notes,AI Insights,Stallion Match URL,Buyer Notes
+214,92,88,Speed x Classic,91,86,78,A+,"ST Compatible; Top Pick; Commercial",94,Top Pick,"High commercial mating appeal with strong yearling-market profile.","Best blend of speed, residual pedigree and sale-ring upside.","https://www.stallionmatch.com","Inspect physical, likely shortlist."
+228,86,84,Speed Reinforcement,88,80,72,A,"ST Compatible; Value",87,Value,"Good nick profile and strong physical compatibility markers.","Value mare with enough commercial strength for shortlist review.","https://www.stallionmatch.com","Value if bought at the right level."
+245,79,74,Sprint Balance,82,73,70,B,"Watch; Physical Review",76,Watch,"Commercial enough if bought at the right level.","Useful family, but mating score trails the leading mares.","https://www.stallionmatch.com","Watch pending physical notes."
+302,91,90,Classic Upgrade,84,92,86,A+,"ST Compatible; Pedigree Strength",92,Top Pick,"Pedigree depth gives the mating a high-quality residual angle.","Strong broodmare profile for Southport Tycoon with ranking upside.","https://www.stallionmatch.com","High-priority pedigree review."`;
 
 const headerMap: Record<string, keyof SouthportTycoonAnalysis | 'tags'> = {
   lotnumber: 'lotNumber',
@@ -87,6 +92,12 @@ const headerMap: Record<string, keyof SouthportTycoonAnalysis | 'tags'> = {
   pedigreestrength: 'pedigreeStrength',
   dosageprofile: 'dosageProfile',
   dosage: 'dosageProfile',
+  speedscore: 'speedScore',
+  speed: 'speedScore',
+  classicscore: 'classicScore',
+  classic: 'classicScore',
+  staminascore: 'staminaScore',
+  stamina: 'staminaScore',
   commercialrating: 'commercialRating',
   suggestedtags: 'tags',
   tags: 'tags',
@@ -97,6 +108,11 @@ const headerMap: Record<string, keyof SouthportTycoonAnalysis | 'tags'> = {
   notes: 'commercialNotes',
   aiinsights: 'aiInsights',
   insights: 'aiInsights',
+  stallionmatchurl: 'stallionMatchUrl',
+  matchurl: 'stallionMatchUrl',
+  url: 'stallionMatchUrl',
+  buyernotes: 'buyerNotes',
+  buyernote: 'buyerNotes',
 };
 
 export function getDefaultSouthportTycoonAnalysis(): SouthportTycoonAnalysis[] {
@@ -168,7 +184,10 @@ function rowToAnalysis(
       field === 'lotNumber' ||
       field === 'matchRating' ||
       field === 'pedigreeStrength' ||
-      field === 'rankingScore'
+      field === 'rankingScore' ||
+      field === 'speedScore' ||
+      field === 'classicScore' ||
+      field === 'staminaScore'
     ) {
       draft[field] = Number(value.replace('%', ''));
       return;
@@ -196,6 +215,16 @@ function rowToAnalysis(
 
     if (field === 'aiInsights') {
       draft.aiInsights = value;
+      return;
+    }
+
+    if (field === 'stallionMatchUrl') {
+      draft.stallionMatchUrl = value;
+      return;
+    }
+
+    if (field === 'buyerNotes') {
+      draft.buyerNotes = value;
     }
   });
 
@@ -208,12 +237,17 @@ function rowToAnalysis(
     matchRating: draft.matchRating,
     pedigreeStrength: draft.pedigreeStrength ?? 0,
     dosageProfile: draft.dosageProfile ?? 'Not supplied',
+    speedScore: draft.speedScore,
+    classicScore: draft.classicScore,
+    staminaScore: draft.staminaScore,
     commercialRating: draft.commercialRating ?? 'N/A',
     suggestedTags: draft.suggestedTags ?? [],
     rankingScore: draft.rankingScore ?? draft.matchRating,
     verdict: draft.verdict,
     commercialNotes: draft.commercialNotes ?? 'No commercial notes supplied.',
     aiInsights: draft.aiInsights ?? 'No AI insight supplied.',
+    stallionMatchUrl: draft.stallionMatchUrl,
+    buyerNotes: draft.buyerNotes,
   };
 }
 

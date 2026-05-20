@@ -49,6 +49,7 @@ type Horse = {
   pedigree: string;
   tag: string;
   rating: string;
+  note: string;
 };
 
 const horseHero = require('../../assets/black-horse.png') as ImageSourcePropType;
@@ -76,16 +77,9 @@ function buildShortlistHorses(analysisRows?: SouthportTycoonAnalysis[]): Horse[]
       pedigree: `${lot.sire} x ${lot.dam}`,
       tag: lot.analysis?.verdict ?? 'Watch',
       rating: `${lot.analysis?.matchRating ?? 0}%`,
+      note: lot.analysis?.buyerNotes ?? 'Buyer decision pending',
     }));
 }
-
-const summaryData = [
-  { icon: 'star' as IconName, label: 'Shortlisted', value: '5' },
-  { icon: 'eye' as IconName, label: 'Watching', value: '7' },
-  { icon: 'tag' as IconName, label: 'Value', value: '8' },
-  { icon: 'gavel' as IconName, label: 'Bid Plan', value: '--' },
-  { icon: 'users' as IconName, label: 'Team', value: '6' },
-];
 
 // function ShortlistScreen({
 //   onOpenHome,
@@ -231,6 +225,16 @@ function ShortlistScreen({
   analysisRows,
 }: NavProps) {
   const horses = buildShortlistHorses(analysisRows);
+  const topPickCount = horses.filter(item => item.tag === 'Top Pick').length;
+  const valueCount = horses.filter(item => item.tag === 'Value').length;
+  const watchCount = horses.filter(item => item.tag === 'Watch').length;
+  const summaryData = [
+    { icon: 'star' as IconName, label: 'Shortlisted', value: `${horses.length}` },
+    { icon: 'eye' as IconName, label: 'Watching', value: `${watchCount}` },
+    { icon: 'tag' as IconName, label: 'Value', value: `${valueCount}` },
+    { icon: 'gavel' as IconName, label: 'Top Picks', value: `${topPickCount}` },
+    { icon: 'users' as IconName, label: 'Team', value: '6' },
+  ];
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -276,12 +280,12 @@ function ShortlistScreen({
         <View style={styles.tabs}>
           <View style={styles.activeTab}>
             <Text style={styles.activeTabText}>
-              Top Picks ({horses.filter(item => item.tag === 'Top Pick').length})
+              Top Picks ({topPickCount})
             </Text>
           </View>
 
-          <Text style={styles.tabText}>Watch (7)</Text>
-          <Text style={styles.tabText}>Value (8)</Text>
+          <Text style={styles.tabText}>Watch ({watchCount})</Text>
+          <Text style={styles.tabText}>Value ({valueCount})</Text>
         </View>
 
         <View style={styles.infoBar}>
@@ -395,7 +399,7 @@ function HorseCard({ item }: { item: Horse }) {
           size={24}
           color={palette.goldBright}
         />
-        <Text style={styles.ratingLabel}>Your Rating</Text>
+        <Text style={styles.ratingLabel}>ST Match</Text>
         <Text style={styles.ratingValue}>{item.rating}</Text>
       </View>
     </View>

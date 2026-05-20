@@ -298,6 +298,7 @@ function App() {
                 onOpenMore={openMore}
                 onUploadCsv={handleUploadCsv}
                 csvImportStatus={csvImportStatus}
+                analysisRows={analysisRows}
               />
             </View>
           ) : null}
@@ -337,6 +338,7 @@ function App() {
               <CachedCompareShortlist
                 onOpenHome={openHome}
                 onOpenSales={openSales}
+                onOpenShortlist={openShortlist}
                 onOpenActivity={openActivity}
                 onOpenMore={openMore}
                 analysisRows={analysisRows}

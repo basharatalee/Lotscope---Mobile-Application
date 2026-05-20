@@ -131,27 +131,29 @@ const onlineSales: Sale[] = [
 ];
 
 function buildCatalogueLots(analysisRows?: SouthportTycoonAnalysis[]): Lot[] {
-  return getEnrichedBroodmareCatalogue(analysisRows).map(lot => {
-  const verdict = lot.analysis?.verdict ?? 'Watch';
-  const insightTone =
-    verdict === 'Top Pick' ? 'green' : verdict === 'Value' ? 'gold' : 'red';
+  return getEnrichedBroodmareCatalogue(analysisRows)
+    .map(lot => {
+      const verdict = lot.analysis?.verdict ?? 'Watch';
+      const insightTone: Lot['insightTone'] =
+        verdict === 'Top Pick' ? 'green' : verdict === 'Value' ? 'gold' : 'red';
 
-  return {
-    ...lot,
-    type: `${lot.age}yo Broodmare`,
-    tags: lot.analysis?.suggestedTags.slice(0, 2) ?? ['MM Catalogue'],
-    insight: verdict,
-    insightTone,
-    marker: insightTone === 'gold' ? 'gold' : undefined,
-    shortlisted: lot.analysis ? lot.analysis.matchRating >= 90 : false,
-    priceGuide: lot.analysis
-      ? `${lot.analysis.commercialRating} Commercial Rating`
-      : 'CSV analysis pending',
-    vendorThinks: lot.analysis?.commercialNotes ?? lot.cataloguePedigree,
-    privacy: 'Private to you and your team',
-    warning: 'CSV intelligence enriches this Magic Millions catalogue lot; it does not create a new sale horse.',
-  };
-  });
+      return {
+        ...lot,
+        type: `${lot.age}yo Broodmare`,
+        tags: lot.analysis?.suggestedTags.slice(0, 2) ?? ['MM Catalogue'],
+        insight: verdict,
+        insightTone,
+        marker: insightTone === 'gold' ? ('gold' as const) : undefined,
+        shortlisted: lot.analysis ? lot.analysis.matchRating >= 90 : false,
+        priceGuide: lot.analysis
+          ? `${lot.analysis.commercialRating} Commercial Rating`
+          : 'CSV analysis pending',
+        vendorThinks: lot.analysis?.commercialNotes ?? lot.cataloguePedigree,
+        privacy: 'Private to you and your team',
+        warning: 'CSV intelligence enriches this Magic Millions catalogue lot; it does not create a new sale horse.',
+      };
+    })
+    .sort((a, b) => (b.analysis?.rankingScore ?? 0) - (a.analysis?.rankingScore ?? 0));
 }
 
 function SalesScreen({
@@ -398,7 +400,7 @@ function LotsScreen({
               size={12}
               color={palette.goldBright}
             />
-            <Text style={styles.filterButtonText}>Filters (3)</Text>
+            <Text style={styles.filterButtonText}>Filters (Top Match)</Text>
           </Pressable>
           <Pressable style={styles.sortButton}>
             <FontAwesome6
@@ -407,14 +409,14 @@ function LotsScreen({
               size={12}
               color={palette.goldBright}
             />
-            <Text style={styles.filterButtonText}>Sort</Text>
+            <Text style={styles.filterButtonText}>Sort: Match</Text>
           </Pressable>
         </View>
 
         <View style={styles.lotCountRow}>
           <Text style={styles.lotCountText}>Magic Millions broodmare catalogue</Text>
           <View style={styles.buyerInsightRow}>
-            <Text style={styles.buyerInsightText}>Buyer Insights</Text>
+            <Text style={styles.buyerInsightText}>Southport Tycoon Overlay</Text>
             <FontAwesome6
               name="circle-info"
               iconStyle="solid"
@@ -552,7 +554,7 @@ function LotCatalogueRow({ lot, onPress }: { lot: Lot; onPress: () => void }) {
 
       <View style={styles.catalogueCopy}>
         <View style={styles.catalogueTitleRow}>
-        <Text style={styles.catalogueTitle}>Lot {lot.lotNumber}</Text>
+          <Text style={styles.catalogueTitle}>Lot {lot.lotNumber}</Text>
           {lot.shortlisted ? (
             <FontAwesome6
               name="star"
@@ -573,11 +575,19 @@ function LotCatalogueRow({ lot, onPress }: { lot: Lot; onPress: () => void }) {
         <Text numberOfLines={1} style={styles.cataloguePedigree}>
           {lot.sire} x {lot.dam}
         </Text>
+        <Text numberOfLines={1} style={styles.cataloguePedigree}>
+          {lot.age}yo | {lot.vendor}
+        </Text>
 
         {lot.analysis ? (
-          <Text style={styles.cataloguePedigree}>
-            Match {lot.analysis.matchRating}% | Pedigree {lot.analysis.pedigreeStrength}
-          </Text>
+          <View style={styles.catalogueScoreRow}>
+            <Text style={styles.catalogueScoreText}>
+              Match {lot.analysis.matchRating}%
+            </Text>
+            <Text style={styles.catalogueScoreText}>
+              Pedigree {lot.analysis.pedigreeStrength}
+            </Text>
+          </View>
         ) : null}
 
         <View style={styles.catalogueTagRow}>
@@ -1217,6 +1227,19 @@ const styles = StyleSheet.create({
     color: palette.muted,
     fontSize: 9,
     marginTop: 5,
+  },
+
+  catalogueScoreRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 6,
+  },
+
+  catalogueScoreText: {
+    color: palette.goldBright,
+    fontSize: 9,
+    fontWeight: '800',
   },
 
   catalogueTagRow: {

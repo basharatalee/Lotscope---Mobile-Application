@@ -115,7 +115,7 @@ function LotDetails({
               size={9}
               color={palette.goldBright}
             />
-            <Text style={styles.photoBadgeText}>12</Text>
+            <Text style={styles.photoBadgeText}>{lot.photos ?? 12}</Text>
           </View>
         </ImageBackground>
 
@@ -123,10 +123,10 @@ function LotDetails({
           <View style={styles.titleRow}>
             <View style={styles.titleCopy}>
               <Text style={styles.lotTitle}>Lot {lot.lotNumber}</Text>
-              <Text style={styles.lotType}>{lot.type}</Text>
               {lot.mareName ? (
-                <Text style={styles.lotType}>{lot.mareName}</Text>
+                <Text style={styles.mareName}>{lot.mareName}</Text>
               ) : null}
+              <Text style={styles.lotType}>{lot.type}</Text>
               <Text style={styles.pedigree}>{lot.sire} x {lot.dam}</Text>
             </View>
             <FontAwesome6
@@ -191,12 +191,21 @@ function LotDetails({
 
         {lot.analysis ? (
           <View style={styles.analysisSection}>
-            <Text style={styles.priceTitle}>SOUTHPORT TYCOON MATCH</Text>
+            <View style={styles.analysisHeaderRow}>
+              <Text style={styles.priceTitle}>SOUTHPORT TYCOON MATCH</Text>
+              <Text style={styles.analysisVerdict}>{lot.analysis.verdict}</Text>
+            </View>
             <View style={styles.analysisGrid}>
               <AnalysisMetric label="Match" value={`${lot.analysis.matchRating}%`} />
               <AnalysisMetric label="Pedigree" value={`${lot.analysis.pedigreeStrength}`} />
               <AnalysisMetric label="Commercial" value={lot.analysis.commercialRating} />
               <AnalysisMetric label="Rank Score" value={`${lot.analysis.rankingScore}`} />
+            </View>
+
+            <View style={styles.profileRow}>
+              <ProfileMetric label="Speed" value={lot.analysis.speedScore} />
+              <ProfileMetric label="Classic" value={lot.analysis.classicScore} />
+              <ProfileMetric label="Stamina" value={lot.analysis.staminaScore} />
             </View>
 
             <Text style={styles.analysisTitle}>PEDIGREE ANALYSIS</Text>
@@ -211,8 +220,19 @@ function LotDetails({
             <Text style={styles.analysisTitle}>AI INSIGHTS</Text>
             <Text style={styles.analysisText}>{lot.analysis.aiInsights}</Text>
 
-            <Text style={styles.analysisTitle}>RANKING POSITION</Text>
-            <Text style={styles.analysisText}>{lot.analysis.verdict}</Text>
+            {lot.analysis.stallionMatchUrl ? (
+              <>
+                <Text style={styles.analysisTitle}>STALLION MATCH</Text>
+                <Text style={styles.analysisLink}>{lot.analysis.stallionMatchUrl}</Text>
+              </>
+            ) : null}
+
+            {lot.analysis.buyerNotes ? (
+              <>
+                <Text style={styles.analysisTitle}>BUYER NOTE</Text>
+                <Text style={styles.analysisText}>{lot.analysis.buyerNotes}</Text>
+              </>
+            ) : null}
           </View>
         ) : null}
 
@@ -301,6 +321,21 @@ function AnalysisMetric({ label, value }: { label: string; value: string }) {
     <View style={styles.analysisMetric}>
       <Text style={styles.analysisMetricValue}>{value}</Text>
       <Text style={styles.analysisMetricLabel}>{label}</Text>
+    </View>
+  );
+}
+
+function ProfileMetric({
+  label,
+  value,
+}: {
+  label: string;
+  value?: number;
+}) {
+  return (
+    <View style={styles.profileMetric}>
+      <Text style={styles.profileValue}>{value ?? '--'}</Text>
+      <Text style={styles.profileLabel}>{label}</Text>
     </View>
   );
 }
@@ -446,6 +481,13 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
+  mareName: {
+    color: palette.white,
+    fontSize: 17,
+    fontWeight: '700',
+    marginTop: 4,
+  },
+
   pedigree: {
     color: palette.muted,
     fontSize: 11,
@@ -585,6 +627,23 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
 
+  analysisHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
+  analysisVerdict: {
+    color: palette.goldBright,
+    fontSize: 9,
+    fontWeight: '900',
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: palette.gold,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+  },
+
   analysisGrid: {
     flexDirection: 'row',
     gap: 6,
@@ -615,6 +674,35 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
+  profileRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: 3,
+  },
+
+  profileMetric: {
+    flex: 1,
+    minHeight: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: '#664318',
+    backgroundColor: '#100d07',
+  },
+
+  profileValue: {
+    color: palette.white,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+
+  profileLabel: {
+    color: palette.goldBright,
+    fontSize: 8,
+    marginTop: 3,
+  },
+
   analysisTitle: {
     color: palette.goldBright,
     fontSize: 10,
@@ -624,6 +712,13 @@ const styles = StyleSheet.create({
 
   analysisText: {
     color: palette.muted,
+    fontSize: 10,
+    lineHeight: 15,
+    marginTop: 5,
+  },
+
+  analysisLink: {
+    color: palette.goldBright,
     fontSize: 10,
     lineHeight: 15,
     marginTop: 5,

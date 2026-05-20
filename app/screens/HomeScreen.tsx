@@ -12,7 +12,10 @@ import {
 } from 'react-native';
 
 import FontAwesome6 from '@react-native-vector-icons/fontawesome6';
-import { magicMillionsBroodmareCatalogue } from '../data/southportTycoonAnalysis';
+import {
+  SouthportTycoonAnalysis,
+  getEnrichedBroodmareCatalogue,
+} from '../data/southportTycoonAnalysis';
 
 type AppIconName =
   | 'bell'
@@ -54,6 +57,8 @@ type CatalogueLot = {
   vendor: string;
   age: number;
   rank: number;
+  matchRating?: number;
+  verdict?: string;
 };
 
 const activeOverlay = {
@@ -65,7 +70,7 @@ const activeOverlay = {
 };
 
 function transformCatalogueLot(
-  lot: (typeof magicMillionsBroodmareCatalogue)[number],
+  lot: ReturnType<typeof getEnrichedBroodmareCatalogue>[number],
   index: number,
 ): CatalogueLot {
   return {
@@ -75,10 +80,10 @@ function transformCatalogueLot(
     vendor: lot.vendor,
     age: lot.age,
     rank: index + 1,
+    matchRating: lot.analysis?.matchRating,
+    verdict: lot.analysis?.verdict,
   };
 }
-
-const catalogueLots = magicMillionsBroodmareCatalogue.map(transformCatalogueLot);
 
 function HomeScreen({
   onOpenSales,
@@ -87,6 +92,7 @@ function HomeScreen({
   onOpenMore,
   onUploadCsv,
   csvImportStatus,
+  analysisRows,
 }: {
   onOpenSales?: () => void;
   onOpenShortlist?: () => void;
@@ -99,7 +105,18 @@ function HomeScreen({
     state: 'sample' | 'loaded' | 'error';
     message?: string;
   };
+  analysisRows?: SouthportTycoonAnalysis[];
 }) {
+  const enrichedLots = getEnrichedBroodmareCatalogue(analysisRows);
+  const catalogueLots = enrichedLots
+    .slice()
+    .sort((a, b) => (b.analysis?.rankingScore ?? 0) - (a.analysis?.rankingScore ?? 0))
+    .slice(0, 3)
+    .map(transformCatalogueLot);
+  const matchedCount = enrichedLots.filter(lot => lot.analysis).length;
+  const topPickCount = enrichedLots.filter(
+    lot => lot.analysis?.verdict === 'Top Pick',
+  ).length;
   const csvStatusText =
     csvImportStatus?.state === 'loaded'
       ? `${csvImportStatus.rowCount} analysis rows loaded from ${csvImportStatus.fileName ?? 'CSV'}`
@@ -162,7 +179,7 @@ function HomeScreen({
                 </View>
               </View>
               <Text style={styles.overlayMeta}>
-                {activeOverlay.insight}
+                {matchedCount} lots ranked | {topPickCount} top picks
               </Text>
             </View>
 
@@ -243,7 +260,7 @@ function HomeScreen({
         </Panel>
 
         <Panel>
-          <SectionHeader title="CSV IMPORT" action="Temporary" />
+          <SectionHeader title="OVERLAY DATA" action="Temporary" />
 
           <Pressable
             style={styles.uploadButton}
@@ -373,8 +390,12 @@ function LotMatchRow({ lot }: { lot: CatalogueLot }) {
       </View>
 
       <View style={styles.matchPercentBadge}>
-        <Text style={styles.matchPercent}>{lot.age}</Text>
-        <Text style={styles.matchLabel}>Age</Text>
+        <Text style={styles.matchPercent}>
+          {lot.matchRating ? `${lot.matchRating}%` : lot.age}
+        </Text>
+        <Text style={styles.matchLabel}>
+          {lot.matchRating ? 'Match' : 'Age'}
+        </Text>
       </View>
     </View>
   );

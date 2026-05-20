@@ -158,23 +158,23 @@ export default function OwnershipTrackingScreen({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}>
         <View style={styles.header}>
-          <Pressable hitSlop={10} style={styles.headerButton}>
+          {/* <Pressable hitSlop={10} style={styles.headerButton}>
             <FontAwesome6
               name="arrow-left"
               iconStyle="solid"
               size={18}
               color={palette.goldBright}
             />
-          </Pressable>
+          </Pressable> */}
           <Text style={styles.headerTitle}>OWNERSHIP & TRACKING</Text>
-          <Pressable hitSlop={10} style={styles.headerButton}>
+          {/* <Pressable hitSlop={10} style={styles.headerButton}>
             <FontAwesome6
               name="plus"
               iconStyle="solid"
               size={18}
               color={palette.goldBright}
             />
-          </Pressable>
+          </Pressable> */}
         </View>
 
         <View style={styles.segmented}>
@@ -492,11 +492,13 @@ const styles = StyleSheet.create({
   },
 
   headerTitle: {
-    color: palette.white,
-    fontSize: 16,
-    fontWeight: '500',
-    letterSpacing: 0,
-  },
+  color: palette.white,
+  fontSize: 16,
+  fontWeight: '500',
+  letterSpacing: 0,
+  textAlign: 'center',
+  flex: 1,
+},
 
   segmented: {
     height: 30,
