@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Image,
   ImageBackground,
@@ -31,7 +31,8 @@ type AppIconName =
   | 'shield-halved'
   | 'sitemap'
   | 'star'
-  | 'chart-simple';
+  | 'chart-simple'
+  | 'user-group';
 
 const logo = require('../../assets/ls-logo.jpeg') as ImageSourcePropType;
 const horseHero = require('../../assets/black-horse.png') as ImageSourcePropType;
@@ -107,16 +108,27 @@ function HomeScreen({
   };
   analysisRows?: SouthportTycoonAnalysis[];
 }) {
-  const enrichedLots = getEnrichedBroodmareCatalogue(analysisRows);
-  const catalogueLots = enrichedLots
-    .slice()
-    .sort((a, b) => (b.analysis?.rankingScore ?? 0) - (a.analysis?.rankingScore ?? 0))
-    .slice(0, 3)
-    .map(transformCatalogueLot);
-  const matchedCount = enrichedLots.filter(lot => lot.analysis).length;
-  const topPickCount = enrichedLots.filter(
-    lot => lot.analysis?.verdict === 'Top Pick',
-  ).length;
+  const enrichedLots = useMemo(
+    () => getEnrichedBroodmareCatalogue(analysisRows),
+    [analysisRows],
+  );
+  const catalogueLots = useMemo(
+    () =>
+      enrichedLots
+        .slice()
+        .sort((a, b) => (b.analysis?.rankingScore ?? 0) - (a.analysis?.rankingScore ?? 0))
+        .slice(0, 3)
+        .map(transformCatalogueLot),
+    [enrichedLots],
+  );
+  const matchedCount = useMemo(
+    () => enrichedLots.filter(lot => lot.analysis).length,
+    [enrichedLots],
+  );
+  const topPickCount = useMemo(
+    () => enrichedLots.filter(lot => lot.analysis?.verdict === 'Top Pick').length,
+    [enrichedLots],
+  );
   const csvStatusText =
     csvImportStatus?.state === 'loaded'
       ? `${csvImportStatus.rowCount} analysis rows loaded from ${csvImportStatus.fileName ?? 'CSV'}`
@@ -289,10 +301,10 @@ function HomeScreen({
       </ScrollView>
 
       <View style={styles.tabBar}>
-        <TabItem icon="house" label="Dashboard" active />
-        <TabItem icon="gavel" label="Sales" onPress={onOpenSales} />
+        <TabItem icon="house" label="Home" active />
+        <TabItem icon="gavel" label="Catalogue" onPress={onOpenSales} />
         <TabItem icon="star" label="Shortlist" onPress={onOpenShortlist} />
-        <TabItem icon="chart-simple" label="Activity" onPress={onOpenActivity} />
+        <TabItem icon="user-group" label="Team" onPress={onOpenActivity} />
         <TabItem icon="ellipsis" label="More" onPress={onOpenMore} />
       </View>
     </SafeAreaView>

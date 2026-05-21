@@ -191,6 +191,7 @@ export default function SaleTeamServicesHubScreen({
       </ScrollView>
 
       <BottomTabs
+        onBack={onBack}
         onOpenHome={onOpenHome}
         onOpenSales={onOpenSales}
         onOpenShortlist={onOpenShortlist}
@@ -259,6 +260,7 @@ function QuickAction({ icon, label }: { icon: IconName; label: string }) {
 }
 
 function BottomTabs({
+  onBack,
   onOpenHome,
   onOpenSales,
   onOpenShortlist,
@@ -267,10 +269,10 @@ function BottomTabs({
   return (
     <View style={styles.tabBar}>
       <TabItem icon="house" label="Home" onPress={onOpenHome} />
-      <TabItem icon="gavel" label="Sales" onPress={onOpenSales} />
+      <TabItem icon="gavel" label="Catalogue" onPress={onOpenSales} />
       <TabItem icon="star" label="Shortlist" onPress={onOpenShortlist} />
-      <TabItem icon="chart-simple" label="Activity" onPress={onOpenActivity} />
-      <TabItem icon="ellipsis" label="More" active />
+      <TabItem icon="user-group" label="Team" active onPress={onOpenActivity} />
+      <TabItem icon="ellipsis" label="More" onPress={onBack} />
     </View>
   );
 }

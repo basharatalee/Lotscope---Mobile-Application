@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Image,
   ImageSourcePropType,
@@ -40,6 +40,7 @@ type IconName =
   | 'shield-halved'
   | 'star'
   | 'tag'
+  | 'user-group'
   | 'users';
 
 type Horse = {
@@ -70,6 +71,7 @@ function buildShortlistHorses(analysisRows?: SouthportTycoonAnalysis[]): Horse[]
   return getEnrichedBroodmareCatalogue(analysisRows)
     .filter(lot => (lot.analysis?.matchRating ?? 0) >= 85)
     .sort((a, b) => (b.analysis?.rankingScore ?? 0) - (a.analysis?.rankingScore ?? 0))
+    .slice(0, 40)
     .map((lot, index) => ({
       id: index + 1,
       lot: `Lot ${lot.lotNumber}`,
@@ -224,17 +226,23 @@ function ShortlistScreen({
   onOpenTeam,
   analysisRows,
 }: NavProps) {
-  const horses = buildShortlistHorses(analysisRows);
-  const topPickCount = horses.filter(item => item.tag === 'Top Pick').length;
-  const valueCount = horses.filter(item => item.tag === 'Value').length;
-  const watchCount = horses.filter(item => item.tag === 'Watch').length;
-  const summaryData = [
-    { icon: 'star' as IconName, label: 'Shortlisted', value: `${horses.length}` },
-    { icon: 'eye' as IconName, label: 'Watching', value: `${watchCount}` },
-    { icon: 'tag' as IconName, label: 'Value', value: `${valueCount}` },
-    { icon: 'gavel' as IconName, label: 'Top Picks', value: `${topPickCount}` },
-    { icon: 'users' as IconName, label: 'Team', value: '6' },
-  ];
+  const horses = useMemo(() => buildShortlistHorses(analysisRows), [analysisRows]);
+  const summaryData = useMemo(() => {
+    const topPickCount = horses.filter(item => item.tag === 'Top Pick').length;
+    const valueCount = horses.filter(item => item.tag === 'Value').length;
+    const watchCount = horses.filter(item => item.tag === 'Watch').length;
+
+    return [
+      { icon: 'star' as IconName, label: 'Shortlisted', value: `${horses.length}` },
+      { icon: 'eye' as IconName, label: 'Watching', value: `${watchCount}` },
+      { icon: 'tag' as IconName, label: 'Value', value: `${valueCount}` },
+      { icon: 'gavel' as IconName, label: 'Top Picks', value: `${topPickCount}` },
+      { icon: 'users' as IconName, label: 'Team', value: '6' },
+    ];
+  }, [horses]);
+  const topPickCount = summaryData[3].value;
+  const watchCount = summaryData[1].value;
+  const valueCount = summaryData[2].value;
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -457,14 +465,14 @@ function BottomTabs({
     <View style={styles.bottomTab}>
       <TabItem
         icon="house"
-        label="Dashboard"
-        active={active === 'Dashboard'}
+        label="Home"
+        active={active === 'Home'}
         onPress={onOpenHome}
       />
 
       <TabItem
         icon="gavel"
-        label="Sales"
+        label="Catalogue"
         active={active === 'Sales'}
         onPress={onOpenSales}
       />
@@ -476,9 +484,9 @@ function BottomTabs({
       />
 
       <TabItem
-        icon="chart-simple"
-        label="Activity"
-        active={active === 'Activity'}
+        icon="user-group"
+        label="Team"
+        active={active === 'Team'}
         onPress={onOpenActivity}
       />
 

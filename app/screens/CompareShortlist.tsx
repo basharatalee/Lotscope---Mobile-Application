@@ -440,7 +440,7 @@
 
 // CompareShortlist.tsx
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   SafeAreaView,
   View,
@@ -472,6 +472,7 @@ type IconName =
   | 'gavel'
   | 'star'
   | 'chart-simple'
+  | 'user-group'
   | 'ellipsis';
 
 // const horses = [
@@ -613,7 +614,7 @@ export default function CompareShortlist({
   onOpenMore,
   analysisRows,
 }: NavProps) {
-  const horses = buildCompareHorses(analysisRows);
+  const horses = useMemo(() => buildCompareHorses(analysisRows), [analysisRows]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -841,7 +842,7 @@ function BottomTabs({
 
       <TabItem
         icon="gavel"
-        label="Sales"
+        label="Catalogue"
         active={active === 'Sales'}
         onPress={onOpenSales}
       />
@@ -853,9 +854,9 @@ function BottomTabs({
       />
 
       <TabItem
-        icon="chart-simple"
-        label="Activity"
-        active={active === 'Activity'}
+        icon="user-group"
+        label="Team"
+        active={active === 'Team'}
         onPress={onOpenActivity}
       />
 

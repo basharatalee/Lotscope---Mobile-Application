@@ -384,9 +384,9 @@ function BottomTabs({
   return (
     <View style={styles.tabBar}>
       <TabItem icon="house" label="Home" onPress={onOpenHome} />
-      <TabItem icon="gavel" label="Sales" onPress={onOpenSales} />
+      <TabItem icon="gavel" label="Catalogue" onPress={onOpenSales} />
       <TabItem icon="star" label="Shortlist" onPress={onOpenShortlist} />
-      <TabItem icon="chart-simple" label="Activity" onPress={onOpenActivity} />
+      <TabItem icon="user-group" label="Team" onPress={onOpenActivity} />
       <TabItem icon="ellipsis" label="More" active />
     </View>
   );

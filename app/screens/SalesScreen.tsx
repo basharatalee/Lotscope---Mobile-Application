@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
+  FlatList,
   Image,
   ImageBackground,
   ImageSourcePropType,
+  ListRenderItem,
   Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 
@@ -38,7 +41,8 @@ type AppIconName =
   | 'plus'
   | 'gavel'
   | 'circle-info'
-  | 'horse-head';
+  | 'horse-head'
+  | 'user-group';
 
 const horseHero = require('../../assets/black-horse.png') as ImageSourcePropType;
 
@@ -69,6 +73,8 @@ type Sale = {
 
 type SaleTab = 'live' | 'online';
 type ScreenMode = 'sales' | 'lots' | 'lotDetail';
+type CatalogueFilter = 'all' | 'top' | 'value' | 'pedigree';
+type CatalogueSort = 'rank' | 'match' | 'pedigree' | 'vendor';
 
 type Lot = {
   lotNumber: number;
@@ -90,6 +96,20 @@ type Lot = {
   privacy: string;
   warning: string;
 } & Pick<EnrichedBroodmareLot, 'analysis'>;
+
+const filterLabels: Record<CatalogueFilter, string> = {
+  all: 'All lots',
+  top: 'Top Picks',
+  value: 'Value',
+  pedigree: 'Pedigree 80+',
+};
+
+const sortLabels: Record<CatalogueSort, string> = {
+  rank: 'Smart Rank',
+  match: 'Match',
+  pedigree: 'Pedigree',
+  vendor: 'Vendor',
+};
 
 const onlineSales: Sale[] = [
   {
@@ -172,7 +192,33 @@ function SalesScreen({
   const [activeTab, setActiveTab] = useState<SaleTab>('live');
   const [screenMode, setScreenMode] = useState<ScreenMode>('sales');
   const [selectedLot, setSelectedLot] = useState<Lot | null>(null);
-  const catalogueLots = buildCatalogueLots(analysisRows);
+  const [catalogueFilter, setCatalogueFilter] = useState<CatalogueFilter>('all');
+  const [catalogueSort, setCatalogueSort] = useState<CatalogueSort>('rank');
+  const [catalogueSearch, setCatalogueSearch] = useState('');
+  const catalogueLots = useMemo(
+    () => buildCatalogueLots(analysisRows),
+    [analysisRows],
+  );
+  const visibleCatalogueLots = useMemo(
+    () =>
+      getVisibleCatalogueLots(
+        catalogueLots,
+        catalogueFilter,
+        catalogueSort,
+        catalogueSearch,
+      ),
+    [catalogueLots, catalogueFilter, catalogueSearch, catalogueSort],
+  );
+  const openLot = useCallback((lot: Lot) => {
+    setSelectedLot(lot);
+    setScreenMode('lotDetail');
+  }, []);
+  const cycleFilter = useCallback(() => {
+    setCatalogueFilter(nextFilter);
+  }, []);
+  const cycleSort = useCallback(() => {
+    setCatalogueSort(nextSort);
+  }, []);
 
   if (screenMode === 'lotDetail' && selectedLot) {
     return (
@@ -181,6 +227,7 @@ function SalesScreen({
         onBackToLots={() => setScreenMode('lots')}
         onOpenHome={onOpenHome}
         onOpenShortlist={onOpenShortlist}
+        onOpenTeam={onOpenActivity}
         onOpenMore={onOpenMore}
       />
     );
@@ -193,15 +240,19 @@ function SalesScreen({
           setScreenMode('sales');
           setActiveTab('online');
         }}
-        onOpenLot={lot => {
-          setSelectedLot(lot);
-          setScreenMode('lotDetail');
-        }}
+        onOpenLot={openLot}
         onOpenHome={onOpenHome}
         onOpenShortlist={onOpenShortlist}
         onOpenActivity={onOpenActivity}
         onOpenMore={onOpenMore}
-        catalogueLots={catalogueLots}
+        catalogueLots={visibleCatalogueLots}
+        totalLotCount={catalogueLots.length}
+        catalogueFilter={catalogueFilter}
+        catalogueSort={catalogueSort}
+        catalogueSearch={catalogueSearch}
+        onChangeCatalogueSearch={setCatalogueSearch}
+        onCycleFilter={cycleFilter}
+        onCycleSort={cycleSort}
       />
     );
   }
@@ -213,7 +264,7 @@ function SalesScreen({
         contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <View style={styles.headerSide} />
-          <Text style={styles.title}>SALES</Text>
+          <Text style={styles.title}>CATALOGUE</Text>
           <Pressable style={styles.bellButton}>
             <FontAwesome6
               name="bell"
@@ -238,7 +289,7 @@ function SalesScreen({
         </View>
 
         {activeTab === 'live' ? (
-          <LiveSalesContent />
+          <LiveSalesContent onOpenCatalogue={() => setScreenMode('lots')} />
         ) : (
           <OnlineSalesContent onSeeLots={() => setScreenMode('lots')} />
         )}
@@ -254,7 +305,7 @@ function SalesScreen({
   );
 }
 
-function LiveSalesContent() {
+function LiveSalesContent({ onOpenCatalogue }: { onOpenCatalogue: () => void }) {
   return (
     <>
       <SectionHeader title="LIVE SALES" />
@@ -292,8 +343,8 @@ function LiveSalesContent() {
           </View>
         </View>
 
-        <Pressable style={styles.viewLiveButton}>
-          <Text style={styles.viewLiveText}>View Live Sale</Text>
+        <Pressable style={styles.viewLiveButton} onPress={onOpenCatalogue}>
+          <Text style={styles.viewLiveText}>Open Catalogue</Text>
           <FontAwesome6
             name="chevron-right"
             iconStyle="solid"
@@ -312,12 +363,16 @@ function OnlineSalesContent({ onSeeLots }: { onSeeLots: () => void }) {
       <SectionHeader title="ONLINE SALES" />
       <View style={styles.onlineList}>
         {onlineSales.map(sale => (
-          <OnlineSaleRow key={`${sale.title}-${sale.subtitle}`} sale={sale} />
+          <OnlineSaleRow
+            key={`${sale.title}-${sale.subtitle}`}
+            sale={sale}
+            onPress={onSeeLots}
+          />
         ))}
       </View>
 
       <Pressable onPress={onSeeLots} style={styles.seeLotsButton}>
-        <Text style={styles.seeLotsText}>See Lots</Text>
+        <Text style={styles.seeLotsText}>See Catalogue</Text>
         <FontAwesome6
           name="chevron-right"
           iconStyle="solid"
@@ -355,6 +410,13 @@ function LotsScreen({
   onOpenActivity,
   onOpenMore,
   catalogueLots,
+  totalLotCount,
+  catalogueFilter,
+  catalogueSort,
+  catalogueSearch,
+  onChangeCatalogueSearch,
+  onCycleFilter,
+  onCycleSort,
 }: {
   onBackToSales: () => void;
   onOpenLot: (lot: Lot) => void;
@@ -363,12 +425,38 @@ function LotsScreen({
   onOpenActivity?: () => void;
   onOpenMore?: () => void;
   catalogueLots: Lot[];
+  totalLotCount: number;
+  catalogueFilter: CatalogueFilter;
+  catalogueSort: CatalogueSort;
+  catalogueSearch: string;
+  onChangeCatalogueSearch: (value: string) => void;
+  onCycleFilter: () => void;
+  onCycleSort: () => void;
 }) {
-  return (
-    <SafeAreaView style={styles.screen}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.lotsScrollContent}>
+  const renderLot = useCallback<ListRenderItem<Lot>>(
+    ({ item }) => (
+      <MemoizedLotCatalogueRow
+        lot={item}
+        onPress={() => onOpenLot(item)}
+      />
+    ),
+    [onOpenLot],
+  );
+  const keyExtractor = useCallback((lot: Lot) => String(lot.lotNumber), []);
+  const listHeader = useMemo(
+    () => (
+      <>
+        <Pressable onPress={onBackToSales} style={styles.catalogueBackButton}>
+          <FontAwesome6
+            name="chevron-right"
+            iconStyle="solid"
+            size={11}
+            color={palette.goldBright}
+            style={styles.backChevron}
+          />
+          <Text style={styles.catalogueBackText}>Back to Sales</Text>
+        </Pressable>
+
         <View style={styles.searchBar}>
           <FontAwesome6
             name="magnifying-glass"
@@ -376,7 +464,17 @@ function LotsScreen({
             size={13}
             color={palette.goldBright}
           />
-          <Text style={styles.searchPlaceholder}>Ask Lotscope or search broodmares</Text>
+          <TextInput
+            value={catalogueSearch}
+            onChangeText={onChangeCatalogueSearch}
+            placeholder="Ask Lotscope or search broodmares"
+            placeholderTextColor={palette.mutedDark}
+            autoCorrect={false}
+            autoCapitalize="none"
+            returnKeyType="search"
+            clearButtonMode="while-editing"
+            style={styles.searchInput}
+          />
           <FontAwesome6
             name="microphone"
             iconStyle="solid"
@@ -393,30 +491,32 @@ function LotsScreen({
         </View>
 
         <View style={styles.filterRow}>
-          <Pressable style={styles.filterButton}>
+          <Pressable style={styles.filterButton} onPress={onCycleFilter}>
             <FontAwesome6
               name="filter"
               iconStyle="solid"
               size={12}
               color={palette.goldBright}
             />
-            <Text style={styles.filterButtonText}>Filters (Top Match)</Text>
+            <Text style={styles.filterButtonText}>{filterLabels[catalogueFilter]}</Text>
           </Pressable>
-          <Pressable style={styles.sortButton}>
+          <Pressable style={styles.sortButton} onPress={onCycleSort}>
             <FontAwesome6
               name="plus"
               iconStyle="solid"
               size={12}
               color={palette.goldBright}
             />
-            <Text style={styles.filterButtonText}>Sort: Match</Text>
+            <Text style={styles.filterButtonText}>Sort: {sortLabels[catalogueSort]}</Text>
           </Pressable>
         </View>
 
         <View style={styles.lotCountRow}>
-          <Text style={styles.lotCountText}>Magic Millions broodmare catalogue</Text>
-          <View style={styles.buyerInsightRow}>
-            <Text style={styles.buyerInsightText}>Southport Tycoon Overlay</Text>
+          <Text style={styles.lotCountText}>
+            {catalogueLots.length} of {totalLotCount} Magic Millions lots
+          </Text>
+          <View style={styles.overlayPill}>
+            <Text style={styles.buyerInsightText}>Southport Tycoon active</Text>
             <FontAwesome6
               name="circle-info"
               iconStyle="solid"
@@ -425,17 +525,23 @@ function LotsScreen({
             />
           </View>
         </View>
-
-        <View style={styles.catalogueList}>
-          {catalogueLots.map(lot => (
-            <LotCatalogueRow
-              key={lot.lotNumber}
-              lot={lot}
-              onPress={() => onOpenLot(lot)}
-            />
-          ))}
-        </View>
-
+      </>
+    ),
+    [
+      catalogueFilter,
+      catalogueLots.length,
+      catalogueSearch,
+      catalogueSort,
+      onBackToSales,
+      onChangeCatalogueSearch,
+      onCycleFilter,
+      onCycleSort,
+      totalLotCount,
+    ],
+  );
+  const listFooter = useMemo(
+    () => (
+      <>
         <View style={styles.quickActionBar}>
           <QuickAction icon="shield-halved" label="Vet Report" />
           <QuickAction icon="eye" label="Scope" />
@@ -446,7 +552,29 @@ function LotsScreen({
         <Pressable onPress={onBackToSales} style={styles.backToSalesButton}>
           <Text style={styles.backToSalesText}>Back to Online Sales</Text>
         </Pressable>
-      </ScrollView>
+      </>
+    ),
+    [onBackToSales],
+  );
+
+  return (
+    <SafeAreaView style={styles.screen}>
+      <FlatList
+        data={catalogueLots}
+        keyExtractor={keyExtractor}
+        renderItem={renderLot}
+        ListHeaderComponent={listHeader}
+        ListFooterComponent={listFooter}
+        ItemSeparatorComponent={CatalogueSeparator}
+        initialNumToRender={10}
+        maxToRenderPerBatch={8}
+        updateCellsBatchingPeriod={32}
+        windowSize={7}
+        removeClippedSubviews
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.lotsScrollContent}
+      />
 
       <BottomTabs
         onOpenHome={onOpenHome}
@@ -456,6 +584,10 @@ function LotsScreen({
       />
     </SafeAreaView>
   );
+}
+
+function CatalogueSeparator() {
+  return <View style={styles.catalogueSeparator} />;
 }
 
 function SegmentButton({
@@ -509,9 +641,9 @@ function InfoLine({ icon, text }: { icon: AppIconName; text: string }) {
   );
 }
 
-function OnlineSaleRow({ sale }: { sale: Sale }) {
+function OnlineSaleRow({ sale, onPress }: { sale: Sale; onPress: () => void }) {
   return (
-    <Pressable style={styles.onlineRow}>
+    <Pressable style={styles.onlineRow} onPress={onPress}>
       <Image source={horseHero} resizeMode="cover" style={styles.onlineThumb} />
 
       <View style={styles.onlineCopy}>
@@ -548,6 +680,9 @@ function OnlineSaleRow({ sale }: { sale: Sale }) {
 }
 
 function LotCatalogueRow({ lot, onPress }: { lot: Lot; onPress: () => void }) {
+  const matchScore = lot.analysis?.matchRating ?? 0;
+  const pedigreeScore = lot.analysis?.pedigreeStrength ?? 0;
+
   return (
     <Pressable onPress={onPress} style={styles.catalogueRow}>
       <Image source={horseHero} resizeMode="cover" style={styles.catalogueThumb} />
@@ -581,12 +716,14 @@ function LotCatalogueRow({ lot, onPress }: { lot: Lot; onPress: () => void }) {
 
         {lot.analysis ? (
           <View style={styles.catalogueScoreRow}>
-            <Text style={styles.catalogueScoreText}>
-              Match {lot.analysis.matchRating}%
-            </Text>
-            <Text style={styles.catalogueScoreText}>
-              Pedigree {lot.analysis.pedigreeStrength}
-            </Text>
+            <View style={styles.scoreBadgeStrong}>
+              <Text style={styles.scoreBadgeValue}>{Math.round(matchScore)}%</Text>
+              <Text style={styles.scoreBadgeLabel}>Match</Text>
+            </View>
+            <View style={styles.scoreBadge}>
+              <Text style={styles.scoreBadgeValue}>{Math.round(pedigreeScore)}</Text>
+              <Text style={styles.scoreBadgeLabel}>Pedigree</Text>
+            </View>
           </View>
         ) : null}
 
@@ -603,6 +740,103 @@ function LotCatalogueRow({ lot, onPress }: { lot: Lot; onPress: () => void }) {
       </View>
     </Pressable>
   );
+}
+
+const MemoizedLotCatalogueRow = React.memo(LotCatalogueRow);
+
+function getVisibleCatalogueLots(
+  lots: Lot[],
+  filter: CatalogueFilter,
+  sort: CatalogueSort,
+  searchQuery: string,
+): Lot[] {
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+
+  return lots
+    .filter(lot => {
+      const analysis = lot.analysis;
+
+      if (!analysis) {
+        return filter === 'all';
+      }
+
+      if (filter === 'top') {
+        return analysis.verdict === 'Top Pick';
+      }
+
+      if (filter === 'value') {
+        return analysis.verdict === 'Value';
+      }
+
+      if (filter === 'pedigree') {
+        return analysis.pedigreeStrength >= 80;
+      }
+
+      return true;
+    })
+    .filter(lot => {
+      if (!normalizedSearch) {
+        return true;
+      }
+
+      return getLotSearchText(lot).includes(normalizedSearch);
+    })
+    .sort((a, b) => getSortValue(b, sort) - getSortValue(a, sort));
+}
+
+function getLotSearchText(lot: Lot): string {
+  return [
+    lot.lotNumber,
+    `lot ${lot.lotNumber}`,
+    lot.mareName,
+    lot.sire,
+    lot.dam,
+    lot.vendor,
+    lot.type,
+    lot.insight,
+    lot.analysis?.verdict,
+    lot.analysis?.stallionName,
+    lot.analysis?.matchLabel,
+    lot.analysis?.vendorName,
+    ...lot.tags,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+}
+
+function getSortValue(lot: Lot, sort: CatalogueSort): number {
+  const analysis = lot.analysis;
+
+  if (!analysis) {
+    return 0;
+  }
+
+  if (sort === 'match') {
+    return analysis.matchRating;
+  }
+
+  if (sort === 'pedigree') {
+    return analysis.pedigreeStrength;
+  }
+
+  if (sort === 'vendor') {
+    const offered = analysis.vendorLotsOffered5y ?? 0;
+    const winners = analysis.vendorWinners5y ?? 0;
+    return offered > 0 ? (winners / offered) * 100 : 0;
+  }
+
+  return analysis.rankingScore;
+}
+
+function nextFilter(previous: CatalogueFilter): CatalogueFilter {
+  const order: CatalogueFilter[] = ['all', 'top', 'value', 'pedigree'];
+  return order[(order.indexOf(previous) + 1) % order.length];
+}
+
+function nextSort(previous: CatalogueSort): CatalogueSort {
+  const order: CatalogueSort[] = ['rank', 'match', 'pedigree', 'vendor'];
+  return order[(order.indexOf(previous) + 1) % order.length];
 }
 
 function QuickAction({
@@ -647,9 +881,9 @@ function BottomTabs({
   return (
     <View style={styles.tabBar}>
       <TabItem icon="house" label="Home" onPress={onOpenHome} />
-      <TabItem icon="gavel" label="Sales" active />
+      <TabItem icon="gavel" label="Catalogue" active />
       <TabItem icon="star" label="Shortlist" onPress={onOpenShortlist} />
-      <TabItem icon="gavel" label="Activity" onPress={onOpenActivity} />
+      <TabItem icon="user-group" label="Team" onPress={onOpenActivity} />
       <TabItem icon="ellipsis" label="More" onPress={onOpenMore} />
     </View>
   );
@@ -1107,10 +1341,32 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 
-  searchPlaceholder: {
+  catalogueBackButton: {
+    alignSelf: 'flex-start',
+    minHeight: 30,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    marginBottom: 7,
+    paddingRight: 12,
+  },
+
+  backChevron: {
+    transform: [{ rotate: '180deg' }],
+  },
+
+  catalogueBackText: {
+    color: palette.goldBright,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+
+  searchInput: {
     flex: 1,
     color: palette.muted,
     fontSize: 10,
+    minHeight: 34,
+    padding: 0,
   },
 
   searchDivider: {
@@ -1169,6 +1425,18 @@ const styles = StyleSheet.create({
     gap: 5,
   },
 
+  overlayPill: {
+    minHeight: 25,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: palette.gold,
+    backgroundColor: '#100d07',
+    paddingHorizontal: 8,
+  },
+
   buyerInsightText: {
     color: palette.goldBright,
     fontSize: 10,
@@ -1178,6 +1446,10 @@ const styles = StyleSheet.create({
   catalogueList: {
     gap: 6,
     marginBottom: 9,
+  },
+
+  catalogueSeparator: {
+    height: 6,
   },
 
   catalogueRow: {
@@ -1232,8 +1504,43 @@ const styles = StyleSheet.create({
   catalogueScoreRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginTop: 6,
+    gap: 6,
+    marginTop: 7,
+  },
+
+  scoreBadgeStrong: {
+    minWidth: 60,
+    height: 31,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: palette.gold,
+    backgroundColor: '#171005',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  scoreBadge: {
+    minWidth: 64,
+    height: 31,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: palette.border,
+    backgroundColor: palette.panel,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  scoreBadgeValue: {
+    color: palette.goldBright,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+
+  scoreBadgeLabel: {
+    color: palette.muted,
+    fontSize: 7,
+    fontWeight: '700',
+    marginTop: 2,
   },
 
   catalogueScoreText: {

@@ -54,6 +54,7 @@ type LotDetailsProps = {
   onBackToLots: () => void;
   onOpenHome?: () => void;
   onOpenShortlist?: () => void;
+  onOpenTeam?: () => void;
   onOpenMore?: () => void;
 };
 
@@ -77,6 +78,7 @@ function LotDetails({
   onBackToLots,
   onOpenHome,
   onOpenShortlist,
+  onOpenTeam,
   onOpenMore,
 }: LotDetailsProps) {
   return (
@@ -192,13 +194,29 @@ function LotDetails({
         {lot.analysis ? (
           <View style={styles.analysisSection}>
             <View style={styles.analysisHeaderRow}>
-              <Text style={styles.priceTitle}>SOUTHPORT TYCOON MATCH</Text>
+              <Text style={styles.priceTitle}>STALLION MATCH OVERLAY</Text>
               <Text style={styles.analysisVerdict}>{lot.analysis.verdict}</Text>
             </View>
+            <View style={styles.overlayScoreBand}>
+              <View style={styles.overlayScorePrimary}>
+                <Text style={styles.overlayScoreValue}>
+                  {Math.round(lot.analysis.matchRating)}%
+                </Text>
+                <Text style={styles.overlayScoreLabel}>
+                  {lot.analysis.matchLabel ?? 'Southport Tycoon Match'}
+                </Text>
+              </View>
+              <View style={styles.overlayScoreSecondary}>
+                <Text style={styles.overlayScoreValue}>
+                  {Math.round(lot.analysis.pedigreeStrength)}
+                </Text>
+                <Text style={styles.overlayScoreLabel}>Pedigree Strength</Text>
+              </View>
+            </View>
             <View style={styles.analysisGrid}>
-              <AnalysisMetric label="Match" value={`${lot.analysis.matchRating}%`} />
-              <AnalysisMetric label="Pedigree" value={`${lot.analysis.pedigreeStrength}`} />
-              <AnalysisMetric label="Commercial" value={lot.analysis.commercialRating} />
+              <AnalysisMetric label="Stallion" value={lot.analysis.stallionName ?? 'Southport Tycoon'} />
+              <AnalysisMetric label="Farm" value={lot.analysis.stallionFarm ?? 'Widden'} />
+              <AnalysisMetric label="Vendor" value={lot.analysis.vendorName ?? lot.vendor ?? 'N/A'} />
               <AnalysisMetric label="Rank Score" value={`${lot.analysis.rankingScore}`} />
             </View>
 
@@ -259,6 +277,7 @@ function LotDetails({
       <BottomTabs
         onOpenHome={onOpenHome}
         onOpenShortlist={onOpenShortlist}
+        onOpenTeam={onOpenTeam}
         onOpenMore={onOpenMore}
       />
     </SafeAreaView>
@@ -319,7 +338,9 @@ function DetailAction({ icon, label }: { icon: IconName; label: string }) {
 function AnalysisMetric({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.analysisMetric}>
-      <Text style={styles.analysisMetricValue}>{value}</Text>
+      <Text numberOfLines={1} adjustsFontSizeToFit style={styles.analysisMetricValue}>
+        {value}
+      </Text>
       <Text style={styles.analysisMetricLabel}>{label}</Text>
     </View>
   );
@@ -343,18 +364,20 @@ function ProfileMetric({
 function BottomTabs({
   onOpenHome,
   onOpenShortlist,
+  onOpenTeam,
   onOpenMore,
 }: {
   onOpenHome?: () => void;
   onOpenShortlist?: () => void;
+  onOpenTeam?: () => void;
   onOpenMore?: () => void;
 }) {
   return (
     <View style={styles.tabBar}>
       <TabItem icon="house" label="Home" onPress={onOpenHome} />
-      <TabItem icon="gavel" label="Sales" active />
+      <TabItem icon="gavel" label="Catalogue" active />
       <TabItem icon="star" label="Shortlist" onPress={onOpenShortlist} />
-      <TabItem icon="gavel" label="Activity" />
+      <TabItem icon="user-group" label="Team" onPress={onOpenTeam} />
       <TabItem icon="ellipsis" label="More" onPress={onOpenMore} />
     </View>
   );
@@ -651,6 +674,49 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 
+  overlayScoreBand: {
+    minHeight: 68,
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 10,
+  },
+
+  overlayScorePrimary: {
+    flex: 1.15,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: palette.gold,
+    backgroundColor: '#171005',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+
+  overlayScoreSecondary: {
+    flex: 1,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: palette.border,
+    backgroundColor: '#101318',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+
+  overlayScoreValue: {
+    color: palette.goldBright,
+    fontSize: 25,
+    fontWeight: '900',
+  },
+
+  overlayScoreLabel: {
+    color: palette.muted,
+    fontSize: 9,
+    fontWeight: '700',
+    marginTop: 4,
+    textAlign: 'center',
+  },
+
   analysisMetric: {
     flex: 1,
     minHeight: 48,
@@ -660,6 +726,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: palette.border,
     backgroundColor: '#101318',
+    paddingHorizontal: 4,
   },
 
   analysisMetricValue: {

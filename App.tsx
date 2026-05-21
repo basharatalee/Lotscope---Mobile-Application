@@ -127,11 +127,7 @@ type AppScreen =
   | 'servicesHub';
 
 const preloadedScreens: AppScreen[] = [
-  'sales',
-  'shortlist',
-  'activity',
   'more',
-  'servicesHub',
 ];
 
 const CachedHomeScreen = React.memo(HomeScreen);
@@ -294,7 +290,7 @@ function App() {
               <CachedHomeScreen
                 onOpenSales={openSales}
                 onOpenShortlist={openShortlist}
-                onOpenActivity={openActivity}
+                onOpenActivity={openServicesHub}
                 onOpenMore={openMore}
                 onUploadCsv={handleUploadCsv}
                 csvImportStatus={csvImportStatus}
@@ -308,7 +304,7 @@ function App() {
               <CachedSalesScreen
                 onOpenHome={openHome}
                 onOpenShortlist={openShortlist}
-                onOpenActivity={openActivity}
+                onOpenActivity={openServicesHub}
                 onOpenMore={openMore}
                 analysisRows={analysisRows}
               />
@@ -321,7 +317,8 @@ function App() {
                 onOpenHome={openHome}
                 onOpenSales={openSales}
                 onOpenCompare={openCompareShortlist}
-                onOpenActivity={openActivity}
+                onOpenActivity={openServicesHub}
+                onOpenTeam={openServicesHub}
                 onOpenMore={openMore}
                 analysisRows={analysisRows}
               />
@@ -339,7 +336,7 @@ function App() {
                 onOpenHome={openHome}
                 onOpenSales={openSales}
                 onOpenShortlist={openShortlist}
-                onOpenActivity={openActivity}
+                onOpenActivity={openServicesHub}
                 onOpenMore={openMore}
                 analysisRows={analysisRows}
               />
@@ -370,7 +367,7 @@ function App() {
                 onOpenHome={openHome}
                 onOpenSales={openSales}
                 onOpenShortlist={openShortlist}
-                onOpenActivity={openActivity}
+                onOpenActivity={openServicesHub}
                 onOpenMore={openMore}
               />
             </View>
@@ -382,7 +379,7 @@ function App() {
                 onOpenHome={openHome}
                 onOpenSales={openSales}
                 onOpenShortlist={openShortlist}
-                onOpenActivity={openActivity}
+                onOpenActivity={openServicesHub}
                 onOpenServicesHub={openServicesHub}
               />
             </View>
@@ -400,7 +397,7 @@ function App() {
                 onOpenHome={openHome}
                 onOpenSales={openSales}
                 onOpenShortlist={openShortlist}
-                onOpenActivity={openActivity}
+                onOpenActivity={openServicesHub}
               />
             </View>
           ) : null}

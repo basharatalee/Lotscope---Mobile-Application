@@ -25,7 +25,7 @@ const palette = {
 
 const horseImg = require('../../assets/black-horse.png');
 
-type TabIconName = 'house' | 'gavel' | 'star' | 'chart-simple' | 'ellipsis';
+type TabIconName = 'house' | 'gavel' | 'star' | 'chart-simple' | 'user-group' | 'ellipsis';
 
 export default function ActivityScreen({
   onOpenLiveInspection,
@@ -88,7 +88,7 @@ export default function ActivityScreen({
 
       <View style={styles.bottomTabsWrapper}>
         <BottomTabs
-          active="Activity"
+          active="Team"
           onOpenHome={onOpenHome}
           onOpenSales={onOpenSales}
           onOpenShortlist={onOpenShortlist}
@@ -210,9 +210,9 @@ function BottomTabs({
   return (
     <View style={styles.bottomTab}>
       <TabItem icon="house" label="Home" active={active === 'Home'} onPress={onOpenHome} />
-      <TabItem icon="gavel" label="Sales" active={active === 'Sales'} onPress={onOpenSales} />
+      <TabItem icon="gavel" label="Catalogue" active={active === 'Sales'} onPress={onOpenSales} />
       <TabItem icon="star" label="Shortlist" active={active === 'Shortlist'} onPress={onOpenShortlist} />
-      <TabItem icon="chart-simple" label="Activity" active={active === 'Activity'} onPress={onOpenActivity} />
+      <TabItem icon="user-group" label="Team" active={active === 'Team'} onPress={onOpenActivity} />
       <TabItem icon="ellipsis" label="More" active={active === 'More'} onPress={onOpenMore} />
     </View>
   );
