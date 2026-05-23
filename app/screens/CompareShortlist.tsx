@@ -564,9 +564,9 @@ function buildCompareHorses(analysisRows?: SouthportTycoonAnalysis[]) {
     athleticism: `${lot.analysis?.pedigreeStrength ?? 0}`,
     age: `${lot.age}yo`,
     vendor: lot.vendor,
-    dosage: lot.analysis?.dosageProfile ?? 'Not supplied',
-    buyerNotes: lot.analysis?.buyerNotes ?? 'Decision note pending',
-    commercial: lot.analysis?.commercialRating ?? 'N/A',
+    dosage: lot.analysis?.dosageProfile ?? '',
+    buyerNotes: lot.analysis?.buyerNotes ?? '',
+    commercial: lot.analysis?.commercialRating ?? '',
     location: 'Magic Millions\nBroodmare Sale',
     vetReport: true,
     scopeReport: true,
@@ -842,7 +842,7 @@ function BottomTabs({
 
       <TabItem
         icon="gavel"
-        label="Catalogue"
+        label="Sales"
         active={active === 'Sales'}
         onPress={onOpenSales}
       />

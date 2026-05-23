@@ -210,7 +210,7 @@ function BottomTabs({
   return (
     <View style={styles.bottomTab}>
       <TabItem icon="house" label="Home" active={active === 'Home'} onPress={onOpenHome} />
-      <TabItem icon="gavel" label="Catalogue" active={active === 'Sales'} onPress={onOpenSales} />
+      <TabItem icon="gavel" label="Sales" active={active === 'Sales'} onPress={onOpenSales} />
       <TabItem icon="star" label="Shortlist" active={active === 'Shortlist'} onPress={onOpenShortlist} />
       <TabItem icon="user-group" label="Team" active={active === 'Team'} onPress={onOpenActivity} />
       <TabItem icon="ellipsis" label="More" active={active === 'More'} onPress={onOpenMore} />

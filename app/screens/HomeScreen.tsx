@@ -63,8 +63,8 @@ type CatalogueLot = {
 };
 
 const activeOverlay = {
-  id: 'southport-tycoon',
-  name: 'Southport Tycoon',
+  id: 'imported-overlay',
+  name: 'Imported Data',
   status: 'ACTIVE',
   rankedLots: 'MM Catalogue',
   insight: 'Ready to overlay mating intelligence on broodmare lots',
@@ -84,6 +84,23 @@ function transformCatalogueLot(
     matchRating: lot.analysis?.matchRating,
     verdict: lot.analysis?.verdict,
   };
+}
+
+function getActiveOverlayName(analysisRows?: SouthportTycoonAnalysis[]): string {
+  const counts = new Map<string, number>();
+
+  analysisRows?.forEach(row => {
+    const stallionName = row.stallionName?.trim();
+
+    if (stallionName) {
+      counts.set(stallionName, (counts.get(stallionName) ?? 0) + 1);
+    }
+  });
+
+  return (
+    Array.from(counts.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0] ??
+    activeOverlay.name
+  );
 }
 
 function HomeScreen({
@@ -129,12 +146,16 @@ function HomeScreen({
     () => enrichedLots.filter(lot => lot.analysis?.verdict === 'Top Pick').length,
     [enrichedLots],
   );
+  const activeOverlayName = useMemo(
+    () => getActiveOverlayName(analysisRows),
+    [analysisRows],
+  );
   const csvStatusText =
     csvImportStatus?.state === 'loaded'
       ? `${csvImportStatus.rowCount} analysis rows loaded from ${csvImportStatus.fileName ?? 'CSV'}`
       : csvImportStatus?.state === 'error'
-        ? csvImportStatus.message ?? 'CSV import failed'
-        : 'Sample Southport Tycoon overlay active';
+        ? csvImportStatus.message ?? 'File import failed'
+        : 'Upload CSV to load analysis';
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -182,7 +203,7 @@ function HomeScreen({
             <View style={styles.overlayCopy}>
               <View style={styles.overlayTitleRow}>
                 <Text style={styles.overlayTitle}>
-                  {activeOverlay.name} Overlay
+                  {activeOverlayName} Overlay
                 </Text>
                 <View style={styles.overlayStatusBadge}>
                   <Text style={styles.overlayStatusText}>
@@ -287,7 +308,7 @@ function HomeScreen({
               />
             </View>
             <View style={styles.uploadCopy}>
-              <Text style={styles.uploadTitle}>Upload Stallion Match CSV</Text>
+              <Text style={styles.uploadTitle}>Upload Stallion Match CSV/XLSX</Text>
               <Text style={styles.uploadMeta}>{csvStatusText}</Text>
             </View>
             <FontAwesome6
@@ -302,7 +323,7 @@ function HomeScreen({
 
       <View style={styles.tabBar}>
         <TabItem icon="house" label="Home" active />
-        <TabItem icon="gavel" label="Catalogue" onPress={onOpenSales} />
+        <TabItem icon="gavel" label="Sales" onPress={onOpenSales} />
         <TabItem icon="star" label="Shortlist" onPress={onOpenShortlist} />
         <TabItem icon="user-group" label="Team" onPress={onOpenActivity} />
         <TabItem icon="ellipsis" label="More" onPress={onOpenMore} />

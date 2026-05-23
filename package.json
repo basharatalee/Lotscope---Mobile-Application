@@ -15,8 +15,10 @@
     "@react-native/new-app-screen": "0.83.0",
     "react": "19.2.0",
     "react-native": "0.83.0",
+    "react-native-fs": "^2.20.0",
     "react-native-safe-area-context": "^5.5.2",
-    "react-native-vector-icons": "^10.3.0"
+    "react-native-vector-icons": "^10.3.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

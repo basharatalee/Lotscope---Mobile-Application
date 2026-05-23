@@ -73,6 +73,29 @@ const palette = {
   green: '#48b85d',
 };
 
+const matchHeaderCandidates = [
+  'matingmatchrating',
+  'stallionmatchrating',
+  'matchrating',
+  'rating',
+  'match',
+  'score',
+];
+
+const pedigreeHeaderCandidates = [
+  'matingpedigreestrength',
+  'lotpedigreestrength',
+  'pedigreestrengthscore',
+  'pedigreestrength',
+  'pedigree',
+];
+
+const rankHeaderCandidates = [
+  'rankingscore',
+  'rankscore',
+  'rank',
+];
+
 function LotDetails({
   lot,
   onBackToLots,
@@ -81,6 +104,12 @@ function LotDetails({
   onOpenTeam,
   onOpenMore,
 }: LotDetailsProps) {
+  const analysisMetricRows = lot.analysis ? getAnalysisMetricRows(lot.analysis, lot.vendor) : [];
+  const profileMetricRows = lot.analysis ? getProfileMetricRows(lot.analysis) : [];
+  const sourceFieldRows = lot.analysis ? getSourceFieldRows(lot.analysis) : [];
+  const hasMatchScore = lot.analysis ? hasSourceValue(lot.analysis, matchHeaderCandidates) : false;
+  const hasPedigreeScore = lot.analysis ? hasSourceValue(lot.analysis, pedigreeHeaderCandidates) : false;
+
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView
@@ -197,46 +226,87 @@ function LotDetails({
               <Text style={styles.priceTitle}>STALLION MATCH OVERLAY</Text>
               <Text style={styles.analysisVerdict}>{lot.analysis.verdict}</Text>
             </View>
-            <View style={styles.overlayScoreBand}>
-              <View style={styles.overlayScorePrimary}>
-                <Text style={styles.overlayScoreValue}>
-                  {Math.round(lot.analysis.matchRating)}%
-                </Text>
-                <Text style={styles.overlayScoreLabel}>
-                  {lot.analysis.matchLabel ?? 'Southport Tycoon Match'}
-                </Text>
+            {hasMatchScore || hasPedigreeScore ? (
+              <View style={styles.overlayScoreBand}>
+                {hasMatchScore ? (
+                  <View style={styles.overlayScorePrimary}>
+                    <Text style={styles.overlayScoreValue}>
+                      {Math.round(lot.analysis.matchRating)}%
+                    </Text>
+                    <Text style={styles.overlayScoreLabel}>
+                      {lot.analysis.matchLabel}
+                    </Text>
+                  </View>
+                ) : null}
+                {hasPedigreeScore ? (
+                  <View style={styles.overlayScoreSecondary}>
+                    <Text style={styles.overlayScoreValue}>
+                      {Math.round(lot.analysis.pedigreeStrength)}
+                    </Text>
+                    <Text style={styles.overlayScoreLabel}>Pedigree Strength</Text>
+                  </View>
+                ) : null}
               </View>
-              <View style={styles.overlayScoreSecondary}>
-                <Text style={styles.overlayScoreValue}>
-                  {Math.round(lot.analysis.pedigreeStrength)}
-                </Text>
-                <Text style={styles.overlayScoreLabel}>Pedigree Strength</Text>
-              </View>
-            </View>
-            <View style={styles.analysisGrid}>
-              <AnalysisMetric label="Stallion" value={lot.analysis.stallionName ?? 'Southport Tycoon'} />
-              <AnalysisMetric label="Farm" value={lot.analysis.stallionFarm ?? 'Widden'} />
-              <AnalysisMetric label="Vendor" value={lot.analysis.vendorName ?? lot.vendor ?? 'N/A'} />
-              <AnalysisMetric label="Rank Score" value={`${lot.analysis.rankingScore}`} />
-            </View>
+            ) : null}
 
-            <View style={styles.profileRow}>
-              <ProfileMetric label="Speed" value={lot.analysis.speedScore} />
-              <ProfileMetric label="Classic" value={lot.analysis.classicScore} />
-              <ProfileMetric label="Stamina" value={lot.analysis.staminaScore} />
-            </View>
+            {analysisMetricRows.length > 0 ? (
+              <View style={styles.analysisGrid}>
+                {analysisMetricRows.map(metric => (
+                  <AnalysisMetric
+                    key={metric.label}
+                    label={metric.label}
+                    value={metric.value}
+                  />
+                ))}
+              </View>
+            ) : null}
+
+            {profileMetricRows.length > 0 ? (
+              <View style={styles.profileRow}>
+                {profileMetricRows.map(metric => (
+                  <ProfileMetric
+                    key={metric.label}
+                    label={metric.label}
+                    value={metric.value}
+                  />
+                ))}
+              </View>
+            ) : null}
 
             <Text style={styles.analysisTitle}>PEDIGREE ANALYSIS</Text>
             <Text style={styles.analysisText}>{lot.cataloguePedigree}</Text>
 
-            <Text style={styles.analysisTitle}>DOSAGE BREAKDOWN</Text>
-            <Text style={styles.analysisText}>{lot.analysis.dosageProfile}</Text>
+            {lot.analysis.dosageProfile ? (
+              <>
+                <Text style={styles.analysisTitle}>DOSAGE BREAKDOWN</Text>
+                <Text style={styles.analysisText}>{lot.analysis.dosageProfile}</Text>
+              </>
+            ) : null}
 
-            <Text style={styles.analysisTitle}>COMMERCIAL NOTES</Text>
-            <Text style={styles.analysisText}>{lot.analysis.commercialNotes}</Text>
+            {lot.analysis.commercialNotes ? (
+              <>
+                <Text style={styles.analysisTitle}>COMMERCIAL NOTES</Text>
+                <Text style={styles.analysisText}>{lot.analysis.commercialNotes}</Text>
+              </>
+            ) : null}
 
-            <Text style={styles.analysisTitle}>AI INSIGHTS</Text>
-            <Text style={styles.analysisText}>{lot.analysis.aiInsights}</Text>
+            {lot.analysis.aiInsights ? (
+              <>
+                <Text style={styles.analysisTitle}>AI INSIGHTS</Text>
+                <Text style={styles.analysisText}>{lot.analysis.aiInsights}</Text>
+              </>
+            ) : null}
+
+            {sourceFieldRows.length > 0 ? (
+              <>
+                <Text style={styles.analysisTitle}>CSV DATA SNAPSHOT</Text>
+                <View style={styles.sourceFieldGrid}>
+                  {sourceFieldRows.map(field => (
+                    <SourceField key={field.label} label={field.label} value={field.value} />
+                  ))}
+                </View>
+              </>
+            ) : null}
 
             {lot.analysis.stallionMatchUrl ? (
               <>
@@ -355,10 +425,170 @@ function ProfileMetric({
 }) {
   return (
     <View style={styles.profileMetric}>
-      <Text style={styles.profileValue}>{value ?? '--'}</Text>
+      <Text style={styles.profileValue}>{value}</Text>
       <Text style={styles.profileLabel}>{label}</Text>
     </View>
   );
+}
+
+function SourceField({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.sourceField}>
+      <Text numberOfLines={1} style={styles.sourceFieldLabel}>{label}</Text>
+      <Text numberOfLines={2} style={styles.sourceFieldValue}>{value}</Text>
+    </View>
+  );
+}
+
+function getAnalysisMetricRows(
+  analysis: SouthportTycoonAnalysis,
+  lotVendor?: string,
+) {
+  return [
+    {
+      label: 'Stallion',
+      value: analysis.stallionName,
+      candidates: ['stallionname', 'stallion', 'sirestallion', 'coveringstallion'],
+    },
+    {
+      label: 'Farm',
+      value: analysis.stallionFarm,
+      candidates: ['stallionfarm', 'farm', 'stud'],
+    },
+    {
+      label: 'Vendor',
+      value: analysis.vendorName ?? lotVendor,
+      candidates: ['vendorname', 'vendor', 'consignor', 'seller'],
+    },
+    {
+      label: 'Rank Score',
+      value: `${analysis.rankingScore}`,
+      candidates: rankHeaderCandidates,
+    },
+    {
+      label: 'Fee',
+      value: analysis.stallionFee,
+      candidates: ['stallionfee', 'fee', 'servicefee'],
+    },
+    {
+      label: 'Lot ID',
+      value: analysis.lotId,
+      candidates: ['lotid'],
+    },
+    {
+      label: 'Horse ID',
+      value: analysis.horseId,
+      candidates: ['horseid', 'sireid'],
+    },
+    {
+      label: 'COB',
+      value: analysis.countryOfBirth,
+      candidates: ['countryofbirth', 'cob', 'country'],
+    },
+  ].filter(
+    (metric): metric is {label: string; value: string; candidates: string[]} =>
+      Boolean(metric.value) && hasSourceValue(analysis, metric.candidates),
+  );
+}
+
+function getProfileMetricRows(analysis: SouthportTycoonAnalysis) {
+  return [
+    {
+      label: 'Speed',
+      value: analysis.speedScore,
+      candidates: ['speedscore', 'speed', 'lotspeedpct', 'matingspeedpct'],
+    },
+    {
+      label: 'Classic',
+      value: analysis.classicScore,
+      candidates: ['classicscore', 'classic', 'lotclassicpct', 'matingclassicpct'],
+    },
+    {
+      label: 'Stamina',
+      value: analysis.staminaScore,
+      candidates: ['staminascore', 'stamina', 'lotstaminapct', 'matingstaminapct'],
+    },
+  ].filter(
+    (metric): metric is {label: string; value: number; candidates: string[]} =>
+      metric.value !== undefined && hasSourceValue(analysis, metric.candidates),
+  );
+}
+
+function getSourceFieldRows(analysis: SouthportTycoonAnalysis) {
+  const {sourceFields, sourceFieldOrder} = analysis;
+
+  if (!sourceFields) {
+    return [];
+  }
+
+  const priorityHeaders = [
+    'matingMatchRating',
+    'matingPedigreeStrength',
+    'matingDI',
+    'matingCI',
+    'lotPedigreeStrength',
+    'lotDI',
+    'lotCI',
+    'stallionFee',
+    'SireID',
+    'SireUUID',
+  ];
+  const usedHeaders = new Set<string>();
+  const priorityRows = priorityHeaders
+    .map(label => {
+      const entry = getOrderedSourceEntries(sourceFields, sourceFieldOrder).find(
+        ([header]) => header.toLowerCase() === label.toLowerCase(),
+      );
+
+      if (!entry) {
+        return null;
+      }
+
+      usedHeaders.add(entry[0]);
+      return { label: entry[0], value: entry[1] };
+    })
+    .filter((row): row is { label: string; value: string } => row !== null);
+  const extraRows = getOrderedSourceEntries(sourceFields, sourceFieldOrder)
+    .filter(([label]) => !usedHeaders.has(label))
+    .filter(([label]) => !label.toLowerCase().includes('url'))
+    .map(([label, value]) => ({ label, value }));
+
+  return [...priorityRows, ...extraRows];
+}
+
+function getOrderedSourceEntries(
+  sourceFields: Record<string, string>,
+  sourceFieldOrder: string[],
+) {
+  const usedHeaders = new Set<string>();
+  const orderedEntries = sourceFieldOrder
+    .filter(header => Object.prototype.hasOwnProperty.call(sourceFields, header))
+    .map(header => {
+      usedHeaders.add(header);
+      return [header, sourceFields[header]] as [string, string];
+    });
+  const extraEntries = Object.entries(sourceFields).filter(
+    ([header]) => !usedHeaders.has(header),
+  );
+
+  return [...orderedEntries, ...extraEntries];
+}
+
+function hasSourceValue(
+  analysis: SouthportTycoonAnalysis,
+  candidates: string[],
+) {
+  return Object.entries(analysis.sourceFields).some(([header, value]) => {
+    const normalizedHeader = normalizeSourceHeader(header);
+    return (
+      value.length > 0 &&
+      candidates.some(candidate => normalizedHeader === candidate)
+    );
+  });
+}
+
+function normalizeSourceHeader(header: string) {
+  return header.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
 function BottomTabs({
@@ -375,7 +605,7 @@ function BottomTabs({
   return (
     <View style={styles.tabBar}>
       <TabItem icon="house" label="Home" onPress={onOpenHome} />
-      <TabItem icon="gavel" label="Catalogue" active />
+      <TabItem icon="gavel" label="Sales" active />
       <TabItem icon="star" label="Shortlist" onPress={onOpenShortlist} />
       <TabItem icon="user-group" label="Team" onPress={onOpenTeam} />
       <TabItem icon="ellipsis" label="More" onPress={onOpenMore} />
@@ -782,6 +1012,38 @@ const styles = StyleSheet.create({
     fontSize: 10,
     lineHeight: 15,
     marginTop: 5,
+  },
+
+  sourceFieldGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 7,
+  },
+
+  sourceField: {
+    width: '48.8%',
+    minHeight: 48,
+    justifyContent: 'center',
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: palette.border,
+    backgroundColor: '#101318',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+
+  sourceFieldLabel: {
+    color: palette.goldBright,
+    fontSize: 8,
+    fontWeight: '800',
+  },
+
+  sourceFieldValue: {
+    color: palette.muted,
+    fontSize: 9,
+    lineHeight: 12,
+    marginTop: 4,
   },
 
   analysisLink: {

@@ -79,7 +79,7 @@ function buildShortlistHorses(analysisRows?: SouthportTycoonAnalysis[]): Horse[]
       pedigree: `${lot.sire} x ${lot.dam}`,
       tag: lot.analysis?.verdict ?? 'Watch',
       rating: `${lot.analysis?.matchRating ?? 0}%`,
-      note: lot.analysis?.buyerNotes ?? 'Buyer decision pending',
+      note: lot.analysis?.buyerNotes ?? '',
     }));
 }
 
@@ -472,7 +472,7 @@ function BottomTabs({
 
       <TabItem
         icon="gavel"
-        label="Catalogue"
+        label="Sales"
         active={active === 'Sales'}
         onPress={onOpenSales}
       />

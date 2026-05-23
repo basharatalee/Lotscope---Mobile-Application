@@ -75,6 +75,10 @@ type SaleTab = 'live' | 'online';
 type ScreenMode = 'sales' | 'lots' | 'lotDetail';
 type CatalogueFilter = 'all' | 'top' | 'value' | 'pedigree';
 type CatalogueSort = 'rank' | 'match' | 'pedigree' | 'vendor';
+type StallionOption = {
+  label: string;
+  lotCount: number;
+};
 
 type Lot = {
   lotNumber: number;
@@ -110,6 +114,8 @@ const sortLabels: Record<CatalogueSort, string> = {
   pedigree: 'Pedigree',
   vendor: 'Vendor',
 };
+
+const allStallionsLabel = 'All stallions';
 
 const onlineSales: Sale[] = [
   {
@@ -160,14 +166,14 @@ function buildCatalogueLots(analysisRows?: SouthportTycoonAnalysis[]): Lot[] {
       return {
         ...lot,
         type: `${lot.age}yo Broodmare`,
-        tags: lot.analysis?.suggestedTags.slice(0, 2) ?? ['MM Catalogue'],
+        tags: lot.analysis?.suggestedTags.slice(0, 2) ?? [],
         insight: verdict,
         insightTone,
         marker: insightTone === 'gold' ? ('gold' as const) : undefined,
         shortlisted: lot.analysis ? lot.analysis.matchRating >= 90 : false,
-        priceGuide: lot.analysis
+        priceGuide: lot.analysis?.commercialRating
           ? `${lot.analysis.commercialRating} Commercial Rating`
-          : 'CSV analysis pending',
+          : '',
         vendorThinks: lot.analysis?.commercialNotes ?? lot.cataloguePedigree,
         privacy: 'Private to you and your team',
         warning: 'CSV intelligence enriches this Magic Millions catalogue lot; it does not create a new sale horse.',
@@ -195,10 +201,18 @@ function SalesScreen({
   const [catalogueFilter, setCatalogueFilter] = useState<CatalogueFilter>('all');
   const [catalogueSort, setCatalogueSort] = useState<CatalogueSort>('rank');
   const [catalogueSearch, setCatalogueSearch] = useState('');
+  const [selectedStallion, setSelectedStallion] = useState(allStallionsLabel);
   const catalogueLots = useMemo(
     () => buildCatalogueLots(analysisRows),
     [analysisRows],
   );
+  const stallionOptions = useMemo(
+    () => getStallionOptions(catalogueLots),
+    [catalogueLots],
+  );
+  const activeStallion = stallionOptions.some(option => option.label === selectedStallion)
+    ? selectedStallion
+    : stallionOptions[0]?.label ?? allStallionsLabel;
   const visibleCatalogueLots = useMemo(
     () =>
       getVisibleCatalogueLots(
@@ -206,8 +220,9 @@ function SalesScreen({
         catalogueFilter,
         catalogueSort,
         catalogueSearch,
+        activeStallion,
       ),
-    [catalogueLots, catalogueFilter, catalogueSearch, catalogueSort],
+    [activeStallion, catalogueLots, catalogueFilter, catalogueSearch, catalogueSort],
   );
   const openLot = useCallback((lot: Lot) => {
     setSelectedLot(lot);
@@ -219,6 +234,9 @@ function SalesScreen({
   const cycleSort = useCallback(() => {
     setCatalogueSort(nextSort);
   }, []);
+  const cycleStallion = useCallback(() => {
+    setSelectedStallion(previous => nextStallion(previous, stallionOptions));
+  }, [stallionOptions]);
 
   if (screenMode === 'lotDetail' && selectedLot) {
     return (
@@ -250,9 +268,12 @@ function SalesScreen({
         catalogueFilter={catalogueFilter}
         catalogueSort={catalogueSort}
         catalogueSearch={catalogueSearch}
+        activeStallion={activeStallion}
+        stallionOptions={stallionOptions}
         onChangeCatalogueSearch={setCatalogueSearch}
         onCycleFilter={cycleFilter}
         onCycleSort={cycleSort}
+        onCycleStallion={cycleStallion}
       />
     );
   }
@@ -264,7 +285,7 @@ function SalesScreen({
         contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <View style={styles.headerSide} />
-          <Text style={styles.title}>CATALOGUE</Text>
+          <Text style={styles.title}>SALES</Text>
           <Pressable style={styles.bellButton}>
             <FontAwesome6
               name="bell"
@@ -414,9 +435,12 @@ function LotsScreen({
   catalogueFilter,
   catalogueSort,
   catalogueSearch,
+  activeStallion,
+  stallionOptions,
   onChangeCatalogueSearch,
   onCycleFilter,
   onCycleSort,
+  onCycleStallion,
 }: {
   onBackToSales: () => void;
   onOpenLot: (lot: Lot) => void;
@@ -429,9 +453,12 @@ function LotsScreen({
   catalogueFilter: CatalogueFilter;
   catalogueSort: CatalogueSort;
   catalogueSearch: string;
+  activeStallion: string;
+  stallionOptions: StallionOption[];
   onChangeCatalogueSearch: (value: string) => void;
   onCycleFilter: () => void;
   onCycleSort: () => void;
+  onCycleStallion: () => void;
 }) {
   const renderLot = useCallback<ListRenderItem<Lot>>(
     ({ item }) => (
@@ -511,12 +538,29 @@ function LotsScreen({
           </Pressable>
         </View>
 
+        <View style={styles.stallionFilterRow}>
+          <Pressable style={styles.stallionFilterButton} onPress={onCycleStallion}>
+            <FontAwesome6
+              name="horse-head"
+              iconStyle="solid"
+              size={12}
+              color={palette.black}
+            />
+            <Text style={styles.stallionFilterText}>
+              Stallion: {activeStallion}
+            </Text>
+          </Pressable>
+          <Text style={styles.stallionFilterMeta}>
+            {stallionOptions.length} option{stallionOptions.length === 1 ? '' : 's'}
+          </Text>
+        </View>
+
         <View style={styles.lotCountRow}>
           <Text style={styles.lotCountText}>
             {catalogueLots.length} of {totalLotCount} Magic Millions lots
           </Text>
           <View style={styles.overlayPill}>
-            <Text style={styles.buyerInsightText}>Southport Tycoon active</Text>
+            <Text style={styles.buyerInsightText}>{activeStallion} active</Text>
             <FontAwesome6
               name="circle-info"
               iconStyle="solid"
@@ -532,10 +576,13 @@ function LotsScreen({
       catalogueLots.length,
       catalogueSearch,
       catalogueSort,
+      activeStallion,
       onBackToSales,
       onChangeCatalogueSearch,
       onCycleFilter,
       onCycleSort,
+      onCycleStallion,
+      stallionOptions.length,
       totalLotCount,
     ],
   );
@@ -682,6 +729,30 @@ function OnlineSaleRow({ sale, onPress }: { sale: Sale; onPress: () => void }) {
 function LotCatalogueRow({ lot, onPress }: { lot: Lot; onPress: () => void }) {
   const matchScore = lot.analysis?.matchRating ?? 0;
   const pedigreeScore = lot.analysis?.pedigreeStrength ?? 0;
+  const pedigreeText = [lot.sire, lot.dam].filter(Boolean).join(' x ');
+  const vendorText = [
+    lot.age !== undefined ? `${lot.age}yo` : undefined,
+    lot.vendor,
+  ].filter(Boolean).join(' | ');
+  const hasMatchScore = lot.analysis
+    ? hasAnalysisSourceValue(lot.analysis, [
+        'matingmatchrating',
+        'stallionmatchrating',
+        'matchrating',
+        'rating',
+        'match',
+        'score',
+      ])
+    : false;
+  const hasPedigreeScore = lot.analysis
+    ? hasAnalysisSourceValue(lot.analysis, [
+        'matingpedigreestrength',
+        'lotpedigreestrength',
+        'pedigreestrengthscore',
+        'pedigreestrength',
+        'pedigree',
+      ])
+    : false;
 
   return (
     <Pressable onPress={onPress} style={styles.catalogueRow}>
@@ -707,36 +778,48 @@ function LotCatalogueRow({ lot, onPress }: { lot: Lot; onPress: () => void }) {
           ) : null}
         </View>
         <Text style={styles.catalogueType}>{lot.mareName}</Text>
-        <Text numberOfLines={1} style={styles.cataloguePedigree}>
-          {lot.sire} x {lot.dam}
-        </Text>
-        <Text numberOfLines={1} style={styles.cataloguePedigree}>
-          {lot.age}yo | {lot.vendor}
-        </Text>
+        {pedigreeText ? (
+          <Text numberOfLines={1} style={styles.cataloguePedigree}>
+            {pedigreeText}
+          </Text>
+        ) : null}
+        {vendorText ? (
+          <Text numberOfLines={1} style={styles.cataloguePedigree}>
+            {vendorText}
+          </Text>
+        ) : null}
 
-        {lot.analysis ? (
+        {hasMatchScore || hasPedigreeScore ? (
           <View style={styles.catalogueScoreRow}>
-            <View style={styles.scoreBadgeStrong}>
-              <Text style={styles.scoreBadgeValue}>{Math.round(matchScore)}%</Text>
-              <Text style={styles.scoreBadgeLabel}>Match</Text>
-            </View>
-            <View style={styles.scoreBadge}>
-              <Text style={styles.scoreBadgeValue}>{Math.round(pedigreeScore)}</Text>
-              <Text style={styles.scoreBadgeLabel}>Pedigree</Text>
-            </View>
+            {hasMatchScore ? (
+              <View style={styles.scoreBadgeStrong}>
+                <Text style={styles.scoreBadgeValue}>{Math.round(matchScore)}%</Text>
+                <Text style={styles.scoreBadgeLabel}>Match</Text>
+              </View>
+            ) : null}
+            {hasPedigreeScore ? (
+              <View style={styles.scoreBadge}>
+                <Text style={styles.scoreBadgeValue}>{Math.round(pedigreeScore)}</Text>
+                <Text style={styles.scoreBadgeLabel}>Pedigree</Text>
+              </View>
+            ) : null}
           </View>
         ) : null}
 
-        <View style={styles.catalogueTagRow}>
-          {lot.tags.map(tag => (
-            <Text key={tag} style={styles.catalogueTag}>
-              {tag}
-            </Text>
-          ))}
-          <Text style={[styles.insightTag, insightStyleByTone[lot.insightTone]]}>
-            {lot.insight}
-          </Text>
-        </View>
+        {lot.tags.length > 0 || lot.insight ? (
+          <View style={styles.catalogueTagRow}>
+            {lot.tags.map(tag => (
+              <Text key={tag} style={styles.catalogueTag}>
+                {tag}
+              </Text>
+            ))}
+            {lot.insight ? (
+              <Text style={[styles.insightTag, insightStyleByTone[lot.insightTone]]}>
+                {lot.insight}
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
       </View>
     </Pressable>
   );
@@ -749,12 +832,22 @@ function getVisibleCatalogueLots(
   filter: CatalogueFilter,
   sort: CatalogueSort,
   searchQuery: string,
+  activeStallion: string,
 ): Lot[] {
   const normalizedSearch = searchQuery.trim().toLowerCase();
+  const normalizedStallion = activeStallion.trim().toLowerCase();
 
   return lots
     .filter(lot => {
       const analysis = lot.analysis;
+
+      if (
+        normalizedStallion !== allStallionsLabel.toLowerCase() &&
+        normalizedStallion &&
+        analysis?.stallionName?.toLowerCase() !== normalizedStallion
+      ) {
+        return false;
+      }
 
       if (!analysis) {
         return filter === 'all';
@@ -798,11 +891,27 @@ function getLotSearchText(lot: Lot): string {
     lot.analysis?.stallionName,
     lot.analysis?.matchLabel,
     lot.analysis?.vendorName,
+    lot.analysis?.stallionFarm,
+    lot.analysis?.stallionFee,
+    ...Object.values(lot.analysis?.sourceFields ?? {}),
     ...lot.tags,
   ]
     .filter(Boolean)
     .join(' ')
     .toLowerCase();
+}
+
+function hasAnalysisSourceValue(
+  analysis: SouthportTycoonAnalysis,
+  candidates: string[],
+) {
+  return Object.entries(analysis.sourceFields).some(([header, value]) => {
+    const normalizedHeader = header.toLowerCase().replace(/[^a-z0-9]/g, '');
+    return (
+      value.length > 0 &&
+      candidates.some(candidate => normalizedHeader === candidate)
+    );
+  });
 }
 
 function getSortValue(lot: Lot, sort: CatalogueSort): number {
@@ -837,6 +946,35 @@ function nextFilter(previous: CatalogueFilter): CatalogueFilter {
 function nextSort(previous: CatalogueSort): CatalogueSort {
   const order: CatalogueSort[] = ['rank', 'match', 'pedigree', 'vendor'];
   return order[(order.indexOf(previous) + 1) % order.length];
+}
+
+function getStallionOptions(lots: Lot[]): StallionOption[] {
+  const counts = new Map<string, number>();
+
+  lots.forEach(lot => {
+    const stallionName = lot.analysis?.stallionName?.trim();
+
+    if (!stallionName) {
+      return;
+    }
+
+    counts.set(stallionName, (counts.get(stallionName) ?? 0) + 1);
+  });
+
+  const options = Array.from(counts.entries())
+    .map(([label, lotCount]) => ({ label, lotCount }))
+    .sort((a, b) => b.lotCount - a.lotCount || a.label.localeCompare(b.label));
+
+  return options.length > 0 ? options : [{ label: allStallionsLabel, lotCount: lots.length }];
+}
+
+function nextStallion(previous: string, options: StallionOption[]): string {
+  if (options.length === 0) {
+    return previous;
+  }
+
+  const currentIndex = options.findIndex(option => option.label === previous);
+  return options[(currentIndex + 1) % options.length].label;
 }
 
 function QuickAction({
@@ -881,7 +1019,7 @@ function BottomTabs({
   return (
     <View style={styles.tabBar}>
       <TabItem icon="house" label="Home" onPress={onOpenHome} />
-      <TabItem icon="gavel" label="Catalogue" active />
+      <TabItem icon="gavel" label="Sales" active />
       <TabItem icon="star" label="Shortlist" onPress={onOpenShortlist} />
       <TabItem icon="user-group" label="Team" onPress={onOpenActivity} />
       <TabItem icon="ellipsis" label="More" onPress={onOpenMore} />
@@ -1404,6 +1542,39 @@ const styles = StyleSheet.create({
     color: palette.goldBright,
     fontSize: 10,
     fontWeight: '600',
+  },
+
+  stallionFilterRow: {
+    minHeight: 32,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 9,
+  },
+
+  stallionFilterButton: {
+    flex: 1,
+    minHeight: 29,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    borderRadius: 6,
+    backgroundColor: palette.goldBright,
+    paddingHorizontal: 10,
+  },
+
+  stallionFilterText: {
+    color: palette.black,
+    fontSize: 10,
+    fontWeight: '900',
+  },
+
+  stallionFilterMeta: {
+    color: palette.muted,
+    fontSize: 9,
+    fontWeight: '700',
   },
 
   lotCountRow: {
