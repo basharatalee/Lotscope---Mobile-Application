@@ -4,8 +4,10 @@ import {
   ImageSourcePropType,
   Pressable,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 
@@ -24,83 +26,139 @@ const palette = {
 };
 
 function LoginScreen({ onContinue }: { onContinue: () => void }) {
+  const { width, height } = useWindowDimensions();
+  const isTablet = width >= 768;
+  const isShort = height < 720;
+  const horizontalPadding = isTablet ? 48 : 28;
+  const contentWidth = Math.min(
+    width - horizontalPadding * 2,
+    isTablet ? 520 : 420,
+  );
+  const logoWidth = Math.min(contentWidth * 0.72, isTablet ? 280 : 230);
+  const horseScale = isTablet ? 0.52 : isShort ? 0.78 : 0.9;
+  const horseWidth = Math.min(
+    width * horseScale,
+    isTablet ? 460 : isShort ? 300 : 340,
+  );
+  const horseHeight = horseWidth * 1.59;
+
   return (
     <SafeAreaView style={styles.screen}>
-      <View style={styles.content}>
-        <View style={styles.heroArea}>
-          <Image
-            source={lsLogo}
-            resizeMode="contain"
-            style={styles.logo}
-          />
+      <ScrollView
+        bounces={false}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            minHeight: height,
+            paddingHorizontal: horizontalPadding,
+            paddingTop: isShort ? 8 : 12,
+            paddingBottom: isShort ? 18 : 30,
+          },
+        ]}
+      >
+        <View style={[styles.content, { width: contentWidth }]}>
+          <View
+            style={[
+              styles.heroArea,
+              {
+                minHeight: isTablet ? 560 : isShort ? 360 : 500,
+              },
+            ]}
+          >
+            <Image
+              source={lsLogo}
+              resizeMode="contain"
+              style={[
+                styles.logo,
+                {
+                  width: logoWidth,
+                  height: logoWidth * 0.77,
+                  marginTop: isShort ? 16 : 34,
+                  marginLeft: -Math.min(horizontalPadding + 12, 40),
+                },
+              ]}
+            />
 
-          <View style={styles.copyBlock}>
-            <Text style={styles.pitchLine}>Buy Better.</Text>
-            <Text style={styles.pitchLine}>Optimize Smarter.</Text>
-            <Text style={styles.pitchLine}>Win More.</Text>
+            <View style={styles.copyBlock}>
+              <Text style={styles.pitchLine}>The smarter way to</Text>
+              <Text style={styles.pitchLine}>inspect, compare</Text>
+              <Text style={styles.pitchLine}>and buy.</Text>
+            </View>
+
+            <Image
+              source={require('../../assets/black-horse.png')}
+              resizeMode="contain"
+              style={[
+                styles.horseWrap,
+                {
+                  top: isShort ? -34 : -20,
+                  right: isTablet ? -60 : -110,
+                  width: horseWidth,
+                  height: horseHeight,
+                },
+              ]}
+            />
           </View>
 
-          <Image
-            source={require('../../assets/black-horse.png')}
-            resizeMode="contain"
-            style={styles.horseWrap}
-          />
+          <View
+            style={[
+              styles.actions,
+              {
+                marginTop: isShort ? -10 : -24,
+              },
+            ]}
+          >
+            <AuthButton
+              icon={
+                <FontAwesome6
+                  name="apple"
+                  iconStyle="brand"
+                  size={24}
+                  color={palette.black}
+                />
+              }
+              title="Continue with Apple"
+              variant="gold"
+              onPress={onContinue}
+            />
+
+            <AuthButton
+              icon={
+                <FontAwesome6
+                  name="google"
+                  iconStyle="brand"
+                  size={22}
+                  color={palette.white}
+                />
+              }
+              title="Continue with Google"
+              onPress={onContinue}
+            />
+
+            <AuthButton
+              icon={
+                <FontAwesome6
+                  name="envelope"
+                  iconStyle="regular"
+                  size={22}
+                  color={palette.white}
+                />
+              }
+              title="Continue with Email"
+              onPress={onContinue}
+            />
+          </View>
+
+          <View style={styles.accountRow}>
+            <Text style={styles.accountText}>New to Lotscope?</Text>
+
+            <Pressable>
+              <Text style={styles.accountLink}> Create Account</Text>
+            </Pressable>
+          </View>
         </View>
-
-        <View style={styles.actions}>
-          <AuthButton
-            icon={
-              <FontAwesome6
-                name="apple"
-                iconStyle="brand"
-                size={24}
-                color={palette.black}
-              />
-            }
-            title="Continue with Apple"
-            variant="gold"
-            onPress={onContinue}
-          />
-
-          <AuthButton
-            icon={
-              <FontAwesome6
-                name="google"
-                iconStyle="brand"
-                size={22}
-                color={palette.white}
-              />
-            }
-            title="Continue with Google"
-            onPress={onContinue}
-          />
-
-          <AuthButton
-            icon={
-              <FontAwesome6
-                name="envelope"
-                iconStyle="regular"
-                size={22}
-                color={palette.white}
-              />
-            }
-            title="Continue with Email"
-            onPress={onContinue}
-          />
-        </View>
-
-        <View style={styles.accountRow}>
-          <Text style={styles.accountText}>
-            New to Lotscope?
-          </Text>
-
-          <Pressable>
-            <Text style={styles.accountLink}>
-              {' '}Create Account
-            </Text>
-          </Pressable>
-        </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -121,19 +179,11 @@ function AuthButton({
   return (
     <Pressable
       onPress={onPress}
-      style={[
-        styles.authButton,
-        isGold ? styles.authButtonGold : null,
-      ]}>
-      <View style={styles.authIcon}>
-        {icon}
-      </View>
+      style={[styles.authButton, isGold ? styles.authButtonGold : null]}
+    >
+      <View style={styles.authIcon}>{icon}</View>
 
-      <Text
-        style={[
-          styles.authText,
-          isGold ? styles.authTextDark : null,
-        ]}>
+      <Text style={[styles.authText, isGold ? styles.authTextDark : null]}>
         {title}
       </Text>
     </Pressable>
@@ -146,24 +196,25 @@ const styles = StyleSheet.create({
     backgroundColor: palette.black,
   },
 
+  scrollContent: {
+    flexGrow: 1,
+    alignItems: 'center',
+    backgroundColor: palette.black,
+  },
+
   content: {
     flex: 1,
-    paddingHorizontal: 28,
-    paddingTop: 12,
-    paddingBottom: 30,
+    alignSelf: 'center',
     backgroundColor: palette.black,
   },
 
   heroArea: {
     flex: 1,
-    minHeight: 500,
+    width: '100%',
   },
 
   logo: {
-    width: 230,
-    height: 178,
-    marginTop: 34,
-    marginLeft: -40,
+    maxWidth: 280,
   },
 
   copyBlock: {
@@ -180,14 +231,9 @@ const styles = StyleSheet.create({
 
   horseWrap: {
     position: 'absolute',
-    top: -20,
-    right: -110,
-    width: 340,
-    height: 540,
   },
 
   actions: {
-    marginTop: -24,
     alignItems: 'center',
     gap: 12,
     paddingBottom: 32,
@@ -228,13 +274,10 @@ const styles = StyleSheet.create({
   },
 
   accountRow: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 18,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingBottom: 18,
   },
 
   accountText: {

@@ -7,11 +7,13 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 
 import FontAwesome6 from '@react-native-vector-icons/fontawesome6';
 import { SouthportTycoonAnalysis } from '../data/southportTycoonAnalysis';
+import { useLotNote } from '../data/lotNotesStore';
 
 type IconName =
   | 'arrow-left'
@@ -73,15 +75,6 @@ const palette = {
   green: '#48b85d',
 };
 
-const matchHeaderCandidates = [
-  'matingmatchrating',
-  'stallionmatchrating',
-  'matchrating',
-  'rating',
-  'match',
-  'score',
-];
-
 const pedigreeHeaderCandidates = [
   'matingpedigreestrength',
   'lotpedigreestrength',
@@ -104,11 +97,12 @@ function LotDetails({
   onOpenTeam,
   onOpenMore,
 }: LotDetailsProps) {
+  const [buyerNote, setBuyerNote] = useLotNote(lot.lotNumber);
   const analysisMetricRows = lot.analysis ? getAnalysisMetricRows(lot.analysis, lot.vendor) : [];
   const profileMetricRows = lot.analysis ? getProfileMetricRows(lot.analysis) : [];
   const sourceFieldRows = lot.analysis ? getSourceFieldRows(lot.analysis) : [];
-  const hasMatchScore = lot.analysis ? hasSourceValue(lot.analysis, matchHeaderCandidates) : false;
   const hasPedigreeScore = lot.analysis ? hasSourceValue(lot.analysis, pedigreeHeaderCandidates) : false;
+  const grade = lot.analysis ? getAnalysisGrade(lot.analysis) : '';
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -226,24 +220,30 @@ function LotDetails({
               <Text style={styles.priceTitle}>STALLION MATCH OVERLAY</Text>
               <Text style={styles.analysisVerdict}>{lot.analysis.verdict}</Text>
             </View>
-            {hasMatchScore || hasPedigreeScore ? (
+            {grade || lot.age !== undefined || lot.analysis ? (
               <View style={styles.overlayScoreBand}>
-                {hasMatchScore ? (
+                {grade ? (
                   <View style={styles.overlayScorePrimary}>
                     <Text style={styles.overlayScoreValue}>
-                      {Math.round(lot.analysis.matchRating)}%
+                      {grade}
                     </Text>
                     <Text style={styles.overlayScoreLabel}>
-                      {lot.analysis.matchLabel}
+                      Grade
                     </Text>
                   </View>
                 ) : null}
-                {hasPedigreeScore ? (
+                {lot.age !== undefined ? (
+                  <View style={styles.overlayScorePrimary}>
+                    <Text style={styles.overlayScoreValue}>{lot.age}</Text>
+                    <Text style={styles.overlayScoreLabel}>Age</Text>
+                  </View>
+                ) : null}
+                {lot.analysis ? (
                   <View style={styles.overlayScoreSecondary}>
                     <Text style={styles.overlayScoreValue}>
-                      {Math.round(lot.analysis.pedigreeStrength)}
+                      {Math.round(lot.analysis.rankingScore)}
                     </Text>
-                    <Text style={styles.overlayScoreLabel}>Pedigree Strength</Text>
+                    <Text style={styles.overlayScoreLabel}>Rank</Text>
                   </View>
                 ) : null}
               </View>
@@ -272,6 +272,22 @@ function LotDetails({
                 ))}
               </View>
             ) : null}
+
+            <View style={styles.normalMetricRow}>
+              <NormalMetric
+                label="Match"
+                value={`${Math.round(lot.analysis.matchRating)}%`}
+              />
+              {hasPedigreeScore ? (
+                <NormalMetric
+                  label="Pedigree Strength"
+                  value={`${Math.round(lot.analysis.pedigreeStrength)}`}
+                />
+              ) : null}
+              {lot.analysis.matchLabel ? (
+                <NormalMetric label="Match Label" value={lot.analysis.matchLabel} />
+              ) : null}
+            </View>
 
             <Text style={styles.analysisTitle}>PEDIGREE ANALYSIS</Text>
             <Text style={styles.analysisText}>{lot.cataloguePedigree}</Text>
@@ -321,6 +337,22 @@ function LotDetails({
                 <Text style={styles.analysisText}>{lot.analysis.buyerNotes}</Text>
               </>
             ) : null}
+
+            <Text style={styles.analysisTitle}>MY LOT NOTE</Text>
+            <View style={styles.noteBox}>
+              <TextInput
+                value={buyerNote}
+                onChangeText={setBuyerNote}
+                placeholder="Type private notes for this lot"
+                placeholderTextColor={palette.mutedDark}
+                multiline
+                textAlignVertical="top"
+                style={styles.noteInput}
+              />
+              <Text style={styles.noteHelper}>
+                Saved privately on this device and shown in your shortlist.
+              </Text>
+            </View>
           </View>
         ) : null}
 
@@ -431,6 +463,15 @@ function ProfileMetric({
   );
 }
 
+function NormalMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.normalMetric}>
+      <Text style={styles.normalMetricLabel}>{label}</Text>
+      <Text numberOfLines={2} style={styles.normalMetricValue}>{value}</Text>
+    </View>
+  );
+}
+
 function SourceField({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.sourceField}>
@@ -449,6 +490,11 @@ function getAnalysisMetricRows(
       label: 'Stallion',
       value: analysis.stallionName,
       candidates: ['stallionname', 'stallion', 'sirestallion', 'coveringstallion'],
+    },
+    {
+      label: 'Grade',
+      value: getAnalysisGrade(analysis),
+      candidates: ['grade', 'lotgrade', 'horsegrade', 'maregrade', 'commercialgrade', 'matinggrade', 'commercialrating'],
     },
     {
       label: 'Farm',
@@ -512,6 +558,10 @@ function getProfileMetricRows(analysis: SouthportTycoonAnalysis) {
     (metric): metric is {label: string; value: number; candidates: string[]} =>
       metric.value !== undefined && hasSourceValue(analysis, metric.candidates),
   );
+}
+
+function getAnalysisGrade(analysis: SouthportTycoonAnalysis) {
+  return analysis.grade?.trim() || analysis.commercialRating.trim();
 }
 
 function getSourceFieldRows(analysis: SouthportTycoonAnalysis) {
@@ -912,7 +962,7 @@ const styles = StyleSheet.create({
   },
 
   overlayScorePrimary: {
-    flex: 1.15,
+    flex: 1,
     borderRadius: 6,
     borderWidth: 1,
     borderColor: palette.gold,
@@ -957,6 +1007,40 @@ const styles = StyleSheet.create({
     borderColor: palette.border,
     backgroundColor: '#101318',
     paddingHorizontal: 4,
+  },
+
+  normalMetricRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 7,
+    marginBottom: 3,
+  },
+
+  normalMetric: {
+    flexGrow: 1,
+    minWidth: '31%',
+    minHeight: 42,
+    justifyContent: 'center',
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: palette.border,
+    backgroundColor: '#0b0e13',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+
+  normalMetricLabel: {
+    color: palette.muted,
+    fontSize: 8,
+    fontWeight: '700',
+  },
+
+  normalMetricValue: {
+    color: palette.white,
+    fontSize: 11,
+    fontWeight: '800',
+    marginTop: 4,
   },
 
   analysisMetricValue: {
@@ -1051,6 +1135,29 @@ const styles = StyleSheet.create({
     fontSize: 10,
     lineHeight: 15,
     marginTop: 5,
+  },
+
+  noteBox: {
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: palette.border,
+    backgroundColor: '#101318',
+    padding: 9,
+    marginTop: 7,
+  },
+
+  noteInput: {
+    minHeight: 86,
+    color: palette.white,
+    fontSize: 11,
+    lineHeight: 16,
+    padding: 0,
+  },
+
+  noteHelper: {
+    color: palette.mutedDark,
+    fontSize: 8,
+    marginTop: 8,
   },
 
   actionGrid: {

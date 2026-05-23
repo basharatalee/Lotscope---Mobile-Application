@@ -74,10 +74,14 @@ type Sale = {
 type SaleTab = 'live' | 'online';
 type ScreenMode = 'sales' | 'lots' | 'lotDetail';
 type CatalogueFilter = 'all' | 'top' | 'value' | 'pedigree';
-type CatalogueSort = 'rank' | 'match' | 'pedigree' | 'vendor';
+type CatalogueSort = 'grade' | 'age' | 'rank' | 'match' | 'pedigree' | 'vendor';
 type StallionOption = {
   label: string;
   lotCount: number;
+};
+type FilterOption = {
+  label: string;
+  value: string;
 };
 
 type Lot = {
@@ -109,6 +113,8 @@ const filterLabels: Record<CatalogueFilter, string> = {
 };
 
 const sortLabels: Record<CatalogueSort, string> = {
+  grade: 'Grade',
+  age: 'Age',
   rank: 'Smart Rank',
   match: 'Match',
   pedigree: 'Pedigree',
@@ -116,6 +122,8 @@ const sortLabels: Record<CatalogueSort, string> = {
 };
 
 const allStallionsLabel = 'All stallions';
+const allGradesLabel = 'All grades';
+const allAgesLabel = 'All ages';
 
 const onlineSales: Sale[] = [
   {
@@ -165,7 +173,7 @@ function buildCatalogueLots(analysisRows?: SouthportTycoonAnalysis[]): Lot[] {
 
       return {
         ...lot,
-        type: `${lot.age}yo Broodmare`,
+        type: lot.age > 0 ? `${lot.age}yo Broodmare` : 'Broodmare',
         tags: lot.analysis?.suggestedTags.slice(0, 2) ?? [],
         insight: verdict,
         insightTone,
@@ -202,6 +210,8 @@ function SalesScreen({
   const [catalogueSort, setCatalogueSort] = useState<CatalogueSort>('rank');
   const [catalogueSearch, setCatalogueSearch] = useState('');
   const [selectedStallion, setSelectedStallion] = useState(allStallionsLabel);
+  const [selectedGrade, setSelectedGrade] = useState(allGradesLabel);
+  const [selectedAge, setSelectedAge] = useState(allAgesLabel);
   const catalogueLots = useMemo(
     () => buildCatalogueLots(analysisRows),
     [analysisRows],
@@ -210,9 +220,17 @@ function SalesScreen({
     () => getStallionOptions(catalogueLots),
     [catalogueLots],
   );
+  const gradeOptions = useMemo(() => getGradeOptions(catalogueLots), [catalogueLots]);
+  const ageOptions = useMemo(() => getAgeOptions(catalogueLots), [catalogueLots]);
   const activeStallion = stallionOptions.some(option => option.label === selectedStallion)
     ? selectedStallion
     : stallionOptions[0]?.label ?? allStallionsLabel;
+  const activeGrade = gradeOptions.some(option => option.label === selectedGrade)
+    ? selectedGrade
+    : gradeOptions[0]?.label ?? allGradesLabel;
+  const activeAge = ageOptions.some(option => option.label === selectedAge)
+    ? selectedAge
+    : ageOptions[0]?.label ?? allAgesLabel;
   const visibleCatalogueLots = useMemo(
     () =>
       getVisibleCatalogueLots(
@@ -221,8 +239,18 @@ function SalesScreen({
         catalogueSort,
         catalogueSearch,
         activeStallion,
+        activeGrade,
+        activeAge,
       ),
-    [activeStallion, catalogueLots, catalogueFilter, catalogueSearch, catalogueSort],
+    [
+      activeAge,
+      activeGrade,
+      activeStallion,
+      catalogueLots,
+      catalogueFilter,
+      catalogueSearch,
+      catalogueSort,
+    ],
   );
   const openLot = useCallback((lot: Lot) => {
     setSelectedLot(lot);
@@ -237,6 +265,12 @@ function SalesScreen({
   const cycleStallion = useCallback(() => {
     setSelectedStallion(previous => nextStallion(previous, stallionOptions));
   }, [stallionOptions]);
+  const cycleGrade = useCallback(() => {
+    setSelectedGrade(previous => nextFilterOption(previous, gradeOptions));
+  }, [gradeOptions]);
+  const cycleAge = useCallback(() => {
+    setSelectedAge(previous => nextFilterOption(previous, ageOptions));
+  }, [ageOptions]);
 
   if (screenMode === 'lotDetail' && selectedLot) {
     return (
@@ -269,11 +303,17 @@ function SalesScreen({
         catalogueSort={catalogueSort}
         catalogueSearch={catalogueSearch}
         activeStallion={activeStallion}
+        activeGrade={activeGrade}
+        activeAge={activeAge}
         stallionOptions={stallionOptions}
+        gradeOptions={gradeOptions}
+        ageOptions={ageOptions}
         onChangeCatalogueSearch={setCatalogueSearch}
         onCycleFilter={cycleFilter}
         onCycleSort={cycleSort}
         onCycleStallion={cycleStallion}
+        onCycleGrade={cycleGrade}
+        onCycleAge={cycleAge}
       />
     );
   }
@@ -436,11 +476,17 @@ function LotsScreen({
   catalogueSort,
   catalogueSearch,
   activeStallion,
+  activeGrade,
+  activeAge,
   stallionOptions,
+  gradeOptions,
+  ageOptions,
   onChangeCatalogueSearch,
   onCycleFilter,
   onCycleSort,
   onCycleStallion,
+  onCycleGrade,
+  onCycleAge,
 }: {
   onBackToSales: () => void;
   onOpenLot: (lot: Lot) => void;
@@ -454,11 +500,17 @@ function LotsScreen({
   catalogueSort: CatalogueSort;
   catalogueSearch: string;
   activeStallion: string;
+  activeGrade: string;
+  activeAge: string;
   stallionOptions: StallionOption[];
+  gradeOptions: FilterOption[];
+  ageOptions: FilterOption[];
   onChangeCatalogueSearch: (value: string) => void;
   onCycleFilter: () => void;
   onCycleSort: () => void;
   onCycleStallion: () => void;
+  onCycleGrade: () => void;
+  onCycleAge: () => void;
 }) {
   const renderLot = useCallback<ListRenderItem<Lot>>(
     ({ item }) => (
@@ -547,7 +599,7 @@ function LotsScreen({
               color={palette.black}
             />
             <Text style={styles.stallionFilterText}>
-              Stallion: {activeStallion}
+              Covering sire: {activeStallion}
             </Text>
           </Pressable>
           <Text style={styles.stallionFilterMeta}>
@@ -555,12 +607,21 @@ function LotsScreen({
           </Text>
         </View>
 
+        <View style={styles.secondaryFilterRow}>
+          <Pressable style={styles.secondaryFilterButton} onPress={onCycleGrade}>
+            <Text style={styles.secondaryFilterText}>Grade: {activeGrade}</Text>
+          </Pressable>
+          <Pressable style={styles.secondaryFilterButton} onPress={onCycleAge}>
+            <Text style={styles.secondaryFilterText}>Age: {activeAge}</Text>
+          </Pressable>
+        </View>
+
         <View style={styles.lotCountRow}>
           <Text style={styles.lotCountText}>
             {catalogueLots.length} of {totalLotCount} Magic Millions lots
           </Text>
           <View style={styles.overlayPill}>
-            <Text style={styles.buyerInsightText}>{activeStallion} active</Text>
+            <Text style={styles.buyerInsightText}>{activeGrade} | {activeAge}</Text>
             <FontAwesome6
               name="circle-info"
               iconStyle="solid"
@@ -577,11 +638,17 @@ function LotsScreen({
       catalogueSearch,
       catalogueSort,
       activeStallion,
+      activeAge,
+      activeGrade,
       onBackToSales,
       onChangeCatalogueSearch,
       onCycleFilter,
       onCycleSort,
       onCycleStallion,
+      onCycleAge,
+      onCycleGrade,
+      ageOptions.length,
+      gradeOptions.length,
       stallionOptions.length,
       totalLotCount,
     ],
@@ -727,32 +794,12 @@ function OnlineSaleRow({ sale, onPress }: { sale: Sale; onPress: () => void }) {
 }
 
 function LotCatalogueRow({ lot, onPress }: { lot: Lot; onPress: () => void }) {
-  const matchScore = lot.analysis?.matchRating ?? 0;
-  const pedigreeScore = lot.analysis?.pedigreeStrength ?? 0;
+  const grade = getLotGrade(lot);
   const pedigreeText = [lot.sire, lot.dam].filter(Boolean).join(' x ');
   const vendorText = [
-    lot.age !== undefined ? `${lot.age}yo` : undefined,
+    lot.age > 0 ? `${lot.age}yo` : undefined,
     lot.vendor,
   ].filter(Boolean).join(' | ');
-  const hasMatchScore = lot.analysis
-    ? hasAnalysisSourceValue(lot.analysis, [
-        'matingmatchrating',
-        'stallionmatchrating',
-        'matchrating',
-        'rating',
-        'match',
-        'score',
-      ])
-    : false;
-  const hasPedigreeScore = lot.analysis
-    ? hasAnalysisSourceValue(lot.analysis, [
-        'matingpedigreestrength',
-        'lotpedigreestrength',
-        'pedigreestrengthscore',
-        'pedigreestrength',
-        'pedigree',
-      ])
-    : false;
 
   return (
     <Pressable onPress={onPress} style={styles.catalogueRow}>
@@ -789,18 +836,18 @@ function LotCatalogueRow({ lot, onPress }: { lot: Lot; onPress: () => void }) {
           </Text>
         ) : null}
 
-        {hasMatchScore || hasPedigreeScore ? (
+        {grade || lot.age > 0 ? (
           <View style={styles.catalogueScoreRow}>
-            {hasMatchScore ? (
+            {grade ? (
               <View style={styles.scoreBadgeStrong}>
-                <Text style={styles.scoreBadgeValue}>{Math.round(matchScore)}%</Text>
-                <Text style={styles.scoreBadgeLabel}>Match</Text>
+                <Text style={styles.scoreBadgeValue}>{grade}</Text>
+                <Text style={styles.scoreBadgeLabel}>Grade</Text>
               </View>
             ) : null}
-            {hasPedigreeScore ? (
-              <View style={styles.scoreBadge}>
-                <Text style={styles.scoreBadgeValue}>{Math.round(pedigreeScore)}</Text>
-                <Text style={styles.scoreBadgeLabel}>Pedigree</Text>
+            {lot.age > 0 ? (
+              <View style={styles.scoreBadgeStrong}>
+                <Text style={styles.scoreBadgeValue}>{lot.age}</Text>
+                <Text style={styles.scoreBadgeLabel}>Age</Text>
               </View>
             ) : null}
           </View>
@@ -833,9 +880,13 @@ function getVisibleCatalogueLots(
   sort: CatalogueSort,
   searchQuery: string,
   activeStallion: string,
+  activeGrade: string,
+  activeAge: string,
 ): Lot[] {
   const normalizedSearch = searchQuery.trim().toLowerCase();
   const normalizedStallion = activeStallion.trim().toLowerCase();
+  const normalizedGrade = activeGrade.trim().toLowerCase();
+  const normalizedAge = activeAge.trim().toLowerCase();
 
   return lots
     .filter(lot => {
@@ -845,6 +896,22 @@ function getVisibleCatalogueLots(
         normalizedStallion !== allStallionsLabel.toLowerCase() &&
         normalizedStallion &&
         analysis?.stallionName?.toLowerCase() !== normalizedStallion
+      ) {
+        return false;
+      }
+
+      if (
+        normalizedGrade !== allGradesLabel.toLowerCase() &&
+        normalizedGrade &&
+        getLotGrade(lot).toLowerCase() !== normalizedGrade
+      ) {
+        return false;
+      }
+
+      if (
+        normalizedAge !== allAgesLabel.toLowerCase() &&
+        normalizedAge &&
+        getAgeLabel(lot.age).toLowerCase() !== normalizedAge
       ) {
         return false;
       }
@@ -901,21 +968,16 @@ function getLotSearchText(lot: Lot): string {
     .toLowerCase();
 }
 
-function hasAnalysisSourceValue(
-  analysis: SouthportTycoonAnalysis,
-  candidates: string[],
-) {
-  return Object.entries(analysis.sourceFields).some(([header, value]) => {
-    const normalizedHeader = header.toLowerCase().replace(/[^a-z0-9]/g, '');
-    return (
-      value.length > 0 &&
-      candidates.some(candidate => normalizedHeader === candidate)
-    );
-  });
-}
-
 function getSortValue(lot: Lot, sort: CatalogueSort): number {
   const analysis = lot.analysis;
+
+  if (sort === 'age') {
+    return lot.age ?? 0;
+  }
+
+  if (sort === 'grade') {
+    return getGradeSortValue(getLotGrade(lot));
+  }
 
   if (!analysis) {
     return 0;
@@ -944,7 +1006,7 @@ function nextFilter(previous: CatalogueFilter): CatalogueFilter {
 }
 
 function nextSort(previous: CatalogueSort): CatalogueSort {
-  const order: CatalogueSort[] = ['rank', 'match', 'pedigree', 'vendor'];
+  const order: CatalogueSort[] = ['grade', 'age', 'rank', 'match', 'pedigree', 'vendor'];
   return order[(order.indexOf(previous) + 1) % order.length];
 }
 
@@ -965,7 +1027,10 @@ function getStallionOptions(lots: Lot[]): StallionOption[] {
     .map(([label, lotCount]) => ({ label, lotCount }))
     .sort((a, b) => b.lotCount - a.lotCount || a.label.localeCompare(b.label));
 
-  return options.length > 0 ? options : [{ label: allStallionsLabel, lotCount: lots.length }];
+  return [
+    { label: allStallionsLabel, lotCount: lots.length },
+    ...options,
+  ];
 }
 
 function nextStallion(previous: string, options: StallionOption[]): string {
@@ -975,6 +1040,52 @@ function nextStallion(previous: string, options: StallionOption[]): string {
 
   const currentIndex = options.findIndex(option => option.label === previous);
   return options[(currentIndex + 1) % options.length].label;
+}
+
+function getGradeOptions(lots: Lot[]): FilterOption[] {
+  const grades = Array.from(
+    new Set(lots.map(getLotGrade).filter(Boolean)),
+  ).sort((a, b) => getGradeSortValue(b) - getGradeSortValue(a) || a.localeCompare(b));
+
+  return [
+    { label: allGradesLabel, value: allGradesLabel },
+    ...grades.map(grade => ({ label: grade, value: grade })),
+  ];
+}
+
+function getAgeOptions(lots: Lot[]): FilterOption[] {
+  const ages = Array.from(new Set(lots.map(lot => getAgeLabel(lot.age)).filter(Boolean)))
+    .sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+
+  return [
+    { label: allAgesLabel, value: allAgesLabel },
+    ...ages.map(age => ({ label: age, value: age })),
+  ];
+}
+
+function nextFilterOption(previous: string, options: FilterOption[]): string {
+  if (options.length === 0) {
+    return previous;
+  }
+
+  const currentIndex = options.findIndex(option => option.label === previous);
+  return options[(currentIndex + 1) % options.length].label;
+}
+
+function getLotGrade(lot: Lot) {
+  return lot.analysis?.grade?.trim() || lot.analysis?.commercialRating?.trim() || '';
+}
+
+function getAgeLabel(age?: number) {
+  return age !== undefined && age > 0 ? `${age}yo` : '';
+}
+
+function getGradeSortValue(grade: string) {
+  const normalizedGrade = grade.trim().toUpperCase();
+  const order = ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D'];
+  const index = order.indexOf(normalizedGrade);
+
+  return index >= 0 ? order.length - index : 0;
 }
 
 function QuickAction({
@@ -1577,6 +1688,32 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
+  secondaryFilterRow: {
+    minHeight: 31,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    marginBottom: 9,
+  },
+
+  secondaryFilterButton: {
+    flex: 1,
+    minHeight: 29,
+    justifyContent: 'center',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: palette.border,
+    backgroundColor: palette.panel,
+    paddingHorizontal: 9,
+  },
+
+  secondaryFilterText: {
+    color: palette.goldBright,
+    fontSize: 10,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+
   lotCountRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1675,12 +1812,13 @@ const styles = StyleSheet.create({
   catalogueScoreRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 6,
     marginTop: 7,
   },
 
   scoreBadgeStrong: {
-    minWidth: 60,
+    minWidth: 52,
     height: 31,
     borderRadius: 5,
     borderWidth: 1,

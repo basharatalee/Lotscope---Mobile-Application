@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Image,
   ImageSourcePropType,
@@ -15,6 +15,7 @@ import {
   SouthportTycoonAnalysis,
   getEnrichedBroodmareCatalogue,
 } from '../data/southportTycoonAnalysis';
+import { getLotNote, subscribeToLotNotes } from '../data/lotNotesStore';
 
 type NavProps = {
   onOpenHome?: () => void;
@@ -53,7 +54,8 @@ type Horse = {
   note: string;
 };
 
-const horseHero = require('../../assets/black-horse.png') as ImageSourcePropType;
+const horseHero =
+  require('../../assets/black-horse.png') as ImageSourcePropType;
 
 const palette = {
   black: '#020406',
@@ -67,10 +69,15 @@ const palette = {
   green: '#48b85d',
 };
 
-function buildShortlistHorses(analysisRows?: SouthportTycoonAnalysis[]): Horse[] {
+function buildShortlistHorses(
+  analysisRows?: SouthportTycoonAnalysis[],
+): Horse[] {
   return getEnrichedBroodmareCatalogue(analysisRows)
     .filter(lot => (lot.analysis?.matchRating ?? 0) >= 85)
-    .sort((a, b) => (b.analysis?.rankingScore ?? 0) - (a.analysis?.rankingScore ?? 0))
+    .sort(
+      (a, b) =>
+        (b.analysis?.rankingScore ?? 0) - (a.analysis?.rankingScore ?? 0),
+    )
     .slice(0, 40)
     .map((lot, index) => ({
       id: index + 1,
@@ -78,8 +85,11 @@ function buildShortlistHorses(analysisRows?: SouthportTycoonAnalysis[]): Horse[]
       type: `${lot.age}yo Broodmare`,
       pedigree: `${lot.sire} x ${lot.dam}`,
       tag: lot.analysis?.verdict ?? 'Watch',
-      rating: `${lot.analysis?.matchRating ?? 0}%`,
-      note: lot.analysis?.buyerNotes ?? '',
+      rating:
+        lot.analysis?.grade ??
+        lot.analysis?.commercialRating ??
+        `${lot.analysis?.matchRating ?? 0}%`,
+      note: getLotNote(lot.lotNumber) || lot.analysis?.buyerNotes || '',
     }));
 }
 
@@ -104,7 +114,6 @@ function buildShortlistHorses(analysisRows?: SouthportTycoonAnalysis[]): Horse[]
 //               size={21}
 //               color={palette.goldBright}
 //             /> */}
-
 
 //             <FontAwesome6
 //   name={icon}
@@ -202,7 +211,6 @@ function buildShortlistHorses(analysisRows?: SouthportTycoonAnalysis[]): Horse[]
 //         </Pressable>
 //       </ScrollView>
 
-  
 //       <BottomTabs
 //         active="Shortlist"
 //         onOpenHome={onOpenHome}
@@ -214,9 +222,6 @@ function buildShortlistHorses(analysisRows?: SouthportTycoonAnalysis[]): Horse[]
 //   );
 // }
 
-
-
-
 function ShortlistScreen({
   onOpenHome,
   onOpenSales,
@@ -226,17 +231,35 @@ function ShortlistScreen({
   onOpenTeam,
   analysisRows,
 }: NavProps) {
-  const horses = useMemo(() => buildShortlistHorses(analysisRows), [analysisRows]);
+  const [notesVersion, setNotesVersion] = useState(0);
+
+  useEffect(
+    () => subscribeToLotNotes(() => setNotesVersion(version => version + 1)),
+    [],
+  );
+
+  const horses = useMemo(
+    () => buildShortlistHorses(analysisRows),
+    [analysisRows, notesVersion],
+  );
   const summaryData = useMemo(() => {
     const topPickCount = horses.filter(item => item.tag === 'Top Pick').length;
     const valueCount = horses.filter(item => item.tag === 'Value').length;
     const watchCount = horses.filter(item => item.tag === 'Watch').length;
 
     return [
-      { icon: 'star' as IconName, label: 'Shortlisted', value: `${horses.length}` },
+      {
+        icon: 'star' as IconName,
+        label: 'Shortlisted',
+        value: `${horses.length}`,
+      },
       { icon: 'eye' as IconName, label: 'Watching', value: `${watchCount}` },
       { icon: 'tag' as IconName, label: 'Value', value: `${valueCount}` },
-      { icon: 'gavel' as IconName, label: 'Top Picks', value: `${topPickCount}` },
+      {
+        icon: 'gavel' as IconName,
+        label: 'Top Picks',
+        value: `${topPickCount}`,
+      },
       { icon: 'users' as IconName, label: 'Team', value: '6' },
     ];
   }, [horses]);
@@ -248,8 +271,8 @@ function ShortlistScreen({
     <SafeAreaView style={styles.screen}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}>
-        
+        contentContainerStyle={styles.scrollContent}
+      >
         <View style={styles.header}>
           <Pressable hitSlop={10} style={styles.headerLeft}>
             {/* <FontAwesome6
@@ -260,9 +283,7 @@ function ShortlistScreen({
             /> */}
           </Pressable>
 
-          <Text style={styles.headerTitle}>
-            SHORTLIST / WAR ROOM
-          </Text>
+          <Text style={styles.headerTitle}>SHORTLIST / WAR ROOM</Text>
 
           <View style={styles.headerRight}>
             <Pressable hitSlop={10}>
@@ -287,9 +308,7 @@ function ShortlistScreen({
 
         <View style={styles.tabs}>
           <View style={styles.activeTab}>
-            <Text style={styles.activeTabText}>
-              Top Picks ({topPickCount})
-            </Text>
+            <Text style={styles.activeTabText}>Top Picks ({topPickCount})</Text>
           </View>
 
           <Text style={styles.tabText}>Watch ({watchCount})</Text>
@@ -329,9 +348,7 @@ function ShortlistScreen({
           ))}
         </View>
 
-        <Pressable
-          onPress={onOpenCompare}
-          style={styles.compareButton}>
+        <Pressable onPress={onOpenCompare} style={styles.compareButton}>
           <View style={styles.buttonContent}>
             <FontAwesome6
               name="chart-simple"
@@ -340,17 +357,13 @@ function ShortlistScreen({
               color={palette.goldBright}
             />
 
-            <Text style={styles.compareText}>
-              Compare Shortlisted Lots
-            </Text>
+            <Text style={styles.compareText}>Compare Shortlisted Lots</Text>
           </View>
 
           <Text style={styles.compareArrow}>›</Text>
         </Pressable>
 
-        <Pressable
-          onPress={onOpenTeam}
-          style={styles.teamButton}>
+        <Pressable onPress={onOpenTeam} style={styles.teamButton}>
           <View style={styles.buttonContent}>
             <FontAwesome6
               name="comment-dots"
@@ -359,9 +372,7 @@ function ShortlistScreen({
               color={palette.black}
             />
 
-            <Text style={styles.teamText}>
-              Discuss with Team
-            </Text>
+            <Text style={styles.teamText}>Discuss with Team</Text>
           </View>
 
           <Text style={styles.teamArrow}>›</Text>
@@ -380,8 +391,10 @@ function ShortlistScreen({
 }
 
 function HorseCard({ item }: { item: Horse }) {
+  const hasNote = Boolean(item.note);
+
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, hasNote ? styles.cardWithNote : null]}>
       <View style={styles.rankBadge}>
         <Text style={styles.rankText}>{item.id}</Text>
       </View>
@@ -398,6 +411,11 @@ function HorseCard({ item }: { item: Horse }) {
         <View style={styles.tagContainer}>
           <Text style={styles.tagText}>{item.tag}</Text>
         </View>
+        {hasNote ? (
+          <Text numberOfLines={2} style={styles.noteText}>
+            {item.note}
+          </Text>
+        ) : null}
       </View>
 
       <View style={styles.ratingContainer}>
@@ -407,7 +425,7 @@ function HorseCard({ item }: { item: Horse }) {
           size={24}
           color={palette.goldBright}
         />
-        <Text style={styles.ratingLabel}>ST Match</Text>
+        <Text style={styles.ratingLabel}>Grade</Text>
         <Text style={styles.ratingValue}>{item.rating}</Text>
       </View>
     </View>
@@ -452,8 +470,6 @@ function SummaryBox({
 //   );
 // }
 
-
-
 function BottomTabs({
   active,
   onOpenHome,
@@ -477,11 +493,7 @@ function BottomTabs({
         onPress={onOpenSales}
       />
 
-      <TabItem
-        icon="star"
-        label="Shortlist"
-        active={active === 'Shortlist'}
-      />
+      <TabItem icon="star" label="Shortlist" active={active === 'Shortlist'} />
 
       <TabItem
         icon="user-group"
@@ -499,11 +511,6 @@ function BottomTabs({
     </View>
   );
 }
-
-
-
-
-
 
 function TabItem({
   icon,
@@ -529,7 +536,9 @@ function TabItem({
         />
         {hasDot ? <View style={styles.tabDot} /> : null}
       </View>
-      <Text style={[styles.tabItemText, active ? styles.tabItemTextActive : null]}>
+      <Text
+        style={[styles.tabItemText, active ? styles.tabItemTextActive : null]}
+      >
         {label}
       </Text>
     </Pressable>
@@ -1035,6 +1044,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
 
+  cardWithNote: {
+    height: 112,
+    paddingVertical: 8,
+  },
+
   rankBadge: {
     position: 'absolute',
     top: 6,
@@ -1099,6 +1113,13 @@ const styles = StyleSheet.create({
     color: '#58d474',
     fontSize: 9,
     fontWeight: '600',
+  },
+
+  noteText: {
+    color: palette.goldBright,
+    fontSize: 9,
+    lineHeight: 12,
+    marginTop: 4,
   },
 
   ratingContainer: {
@@ -1229,23 +1250,19 @@ const styles = StyleSheet.create({
   //   backgroundColor: '#030507',
   // },
 
-
   bottomTab: {
-  position: 'absolute',
-  left: 0,
-  right: 0,
-  bottom: 0,
-  height: 76,
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'space-around',
-  borderTopWidth: 1,
-  borderTopColor: palette.border,
-  backgroundColor: '#030507',
-},
-
-
-
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 76,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    borderTopWidth: 1,
+    borderTopColor: palette.border,
+    backgroundColor: '#030507',
+  },
 
   tabItem: {
     flex: 1,

@@ -28,6 +28,7 @@ export type SouthportTycoonAnalysis = {
   colour?: string;
   sireName?: string;
   vendorName?: string;
+  age?: number;
   vendorLotsOffered5y?: number;
   vendorLotsSold5y?: number;
   vendorStakesWinners5y?: number;
@@ -44,6 +45,7 @@ export type SouthportTycoonAnalysis = {
   classicScore?: number;
   staminaScore?: number;
   commercialRating: string;
+  grade?: string;
   suggestedTags: string[];
   rankingScore: number;
   verdict: Verdict;
@@ -218,6 +220,22 @@ function rawRowToAnalysis(row: RawCsvRow): SouthportTycoonAnalysis | null {
       'marketrating',
       'ratingcommercial',
     ]) || '';
+  const grade =
+    findValue(fields, [
+      'grade',
+      'lotgrade',
+      'horsegrade',
+      'maregrade',
+      'commercialgrade',
+      'matinggrade',
+    ]) || undefined;
+  const age = parseAgeField(fields, [
+    'age',
+    'lotage',
+    'horseage',
+    'mareage',
+    'broodmareage',
+  ]);
   const rankingScore =
     parseNumberField(fields, [
       'rankingscore',
@@ -287,6 +305,7 @@ function rawRowToAnalysis(row: RawCsvRow): SouthportTycoonAnalysis | null {
       ]) || undefined,
     sireName,
     vendorName,
+    age,
     vendorLotsOffered5y: parseNumberField(fields, ['vendorlotsoffered5y']),
     vendorLotsSold5y: parseNumberField(fields, ['vendorlotssold5y']),
     vendorStakesWinners5y: parseNumberField(fields, ['vendorstakeswinners5y']),
@@ -336,6 +355,7 @@ function rawRowToAnalysis(row: RawCsvRow): SouthportTycoonAnalysis | null {
         'matingstaminapct',
       ]) ?? undefined,
     commercialRating,
+    grade,
     suggestedTags: buildSuggestedTags(fields, stallionName, verdict),
     rankingScore,
     verdict,
@@ -373,8 +393,12 @@ function rawRowToAnalysis(row: RawCsvRow): SouthportTycoonAnalysis | null {
 
 function analysisToBroodmareLot(analysis: SouthportTycoonAnalysis): EnrichedBroodmareLot {
   const currentYear = new Date().getFullYear();
-  const yearOfBirth = analysis.yearOfBirth ?? currentYear;
-  const age = Math.max(0, currentYear - yearOfBirth);
+  const directAge = analysis.age ?? getAgeFromSourceFields(analysis.sourceFields);
+  const age = directAge ?? (
+    analysis.yearOfBirth !== undefined
+      ? Math.max(0, currentYear - analysis.yearOfBirth)
+      : 0
+  );
   const dam = findSourceValue(analysis, [
     'damname',
     'dam',
@@ -516,6 +540,105 @@ function parseNumberField(
 
   const parsed = parseNumeric(value);
   return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function parseNumberExactField(
+  fields: HeaderValue[],
+  candidates: string[],
+): number | undefined {
+  const value =
+    fields.find(
+      field =>
+        field.value.length > 0 &&
+        candidates.some(candidate => field.normalizedHeader === candidate),
+    )?.value ?? '';
+
+  if (!value) {
+    return undefined;
+  }
+
+  const parsed = parseNumeric(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function parseIntegerExactField(
+  fields: HeaderValue[],
+  candidates: string[],
+): number | undefined {
+  const parsed = parseNumberExactField(fields, candidates);
+  return parsed === undefined ? undefined : Math.round(parsed);
+}
+
+function parseAgeField(
+  fields: HeaderValue[],
+  candidates: string[],
+): number | undefined {
+  const field = fields.find(item => {
+    if (!item.value) {
+      return false;
+    }
+
+    if (candidates.some(candidate => item.normalizedHeader === candidate)) {
+      return true;
+    }
+
+    if (item.normalizedHeader.startsWith('age')) {
+      return true;
+    }
+
+    return (
+      item.normalizedHeader.endsWith('age') &&
+      !item.normalizedHeader.includes('dosage') &&
+      !item.normalizedHeader.includes('percentage')
+    );
+  });
+
+  if (!field) {
+    return undefined;
+  }
+
+  return normalizeAgeValue(parseNumeric(field.value));
+}
+
+function getAgeFromSourceFields(sourceFields?: Record<string, string>) {
+  if (!sourceFields) {
+    return undefined;
+  }
+
+  const sourceEntries = Object.entries(sourceFields).map(([header, value]) => ({
+    normalizedHeader: normalizeHeader(header),
+    value,
+  }));
+  const field = sourceEntries.find(item => {
+    if (!item.value) {
+      return false;
+    }
+
+    if (item.normalizedHeader === 'age') {
+      return true;
+    }
+
+    if (item.normalizedHeader.startsWith('age')) {
+      return true;
+    }
+
+    return (
+      item.normalizedHeader.endsWith('age') &&
+      !item.normalizedHeader.includes('dosage') &&
+      !item.normalizedHeader.includes('percentage')
+    );
+  });
+
+  return field ? normalizeAgeValue(parseNumeric(field.value)) : undefined;
+}
+
+function normalizeAgeValue(value: number) {
+  if (!Number.isFinite(value)) {
+    return undefined;
+  }
+
+  const rounded = Math.round(value);
+  return rounded > 0 && rounded <= 40 ? rounded : undefined;
 }
 
 function parseIntegerField(

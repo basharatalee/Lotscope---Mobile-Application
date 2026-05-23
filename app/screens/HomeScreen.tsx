@@ -57,8 +57,7 @@ type CatalogueLot = {
   subtitle: string;
   vendor: string;
   age: number;
-  rank: number;
-  matchRating?: number;
+  grade?: string;
   verdict?: string;
 };
 
@@ -72,7 +71,6 @@ const activeOverlay = {
 
 function transformCatalogueLot(
   lot: ReturnType<typeof getEnrichedBroodmareCatalogue>[number],
-  index: number,
 ): CatalogueLot {
   return {
     lotNumber: lot.lotNumber,
@@ -80,8 +78,7 @@ function transformCatalogueLot(
     subtitle: `${lot.sire} x ${lot.dam}`,
     vendor: lot.vendor,
     age: lot.age,
-    rank: index + 1,
-    matchRating: lot.analysis?.matchRating,
+    grade: lot.analysis?.grade ?? lot.analysis?.commercialRating,
     verdict: lot.analysis?.verdict,
   };
 }
@@ -407,12 +404,10 @@ function MetricCard({
 }
 
 function LotMatchRow({ lot }: { lot: CatalogueLot }) {
+  const hasAge = lot.age > 0;
+
   return (
     <View style={styles.lotRow}>
-      <View style={styles.rankBadge}>
-        <Text style={styles.rankText}>#{lot.rank}</Text>
-      </View>
-
       <View style={styles.lotCopy}>
         <Text style={styles.lotTitle}>Lot {lot.lotNumber} | {lot.title}</Text>
         <Text numberOfLines={1} style={styles.lotSubtitle}>{lot.subtitle}</Text>
@@ -422,13 +417,19 @@ function LotMatchRow({ lot }: { lot: CatalogueLot }) {
         </View>
       </View>
 
-      <View style={styles.matchPercentBadge}>
-        <Text style={styles.matchPercent}>
-          {lot.matchRating ? `${lot.matchRating}%` : lot.age}
-        </Text>
-        <Text style={styles.matchLabel}>
-          {lot.matchRating ? 'Match' : 'Age'}
-        </Text>
+      <View style={styles.lotMetricGroup}>
+        {lot.grade ? (
+          <View style={styles.matchPercentBadge}>
+            <Text style={styles.matchPercent}>{lot.grade}</Text>
+            <Text style={styles.matchLabel}>Grade</Text>
+          </View>
+        ) : null}
+        {hasAge ? (
+          <View style={styles.matchPercentBadge}>
+            <Text style={styles.matchPercent}>{lot.age}</Text>
+            <Text style={styles.matchLabel}>Age</Text>
+          </View>
+        ) : null}
       </View>
     </View>
   );
@@ -801,23 +802,6 @@ const styles = StyleSheet.create({
     borderTopColor: '#3f2c11',
   },
 
-  rankBadge: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: palette.panelSoft,
-    borderWidth: 1,
-    borderColor: palette.border,
-  },
-
-  rankText: {
-    color: palette.goldBright,
-    fontSize: 11,
-    fontWeight: '800',
-  },
-
   lotCopy: {
     flex: 1,
   },
@@ -856,8 +840,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
+  lotMetricGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+
   matchPercentBadge: {
-    minWidth: 54,
+    minWidth: 48,
     alignItems: 'center',
     borderRadius: 6,
     borderWidth: 1,

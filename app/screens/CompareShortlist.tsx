@@ -440,7 +440,7 @@
 
 // CompareShortlist.tsx
 
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   SafeAreaView,
   View,
@@ -457,6 +457,7 @@ import {
   SouthportTycoonAnalysis,
   getEnrichedBroodmareCatalogue,
 } from '../data/southportTycoonAnalysis';
+import { getLotNote, subscribeToLotNotes } from '../data/lotNotesStore';
 
 type NavProps = {
   onOpenHome?: () => void;
@@ -560,12 +561,12 @@ function buildCompareHorses(analysisRows?: SouthportTycoonAnalysis[]) {
     name: `${lot.mareName}\n${lot.sire}`,
     badge: lot.analysis?.verdict ?? 'Watch',
     badgeColor: lot.analysis?.verdict === 'Top Pick' ? '#1B5E20' : '#145A32',
-    racingStyle: `${lot.analysis?.matchRating ?? 0}% Match`,
+    racingStyle: lot.analysis?.grade ?? lot.analysis?.commercialRating ?? `${lot.analysis?.matchRating ?? 0}% Match`,
     athleticism: `${lot.analysis?.pedigreeStrength ?? 0}`,
     age: `${lot.age}yo`,
     vendor: lot.vendor,
     dosage: lot.analysis?.dosageProfile ?? '',
-    buyerNotes: lot.analysis?.buyerNotes ?? '',
+    buyerNotes: getLotNote(lot.lotNumber) || lot.analysis?.buyerNotes || '',
     commercial: lot.analysis?.commercialRating ?? '',
     location: 'Magic Millions\nBroodmare Sale',
     vetReport: true,
@@ -592,7 +593,7 @@ function buildCompareHorses(analysisRows?: SouthportTycoonAnalysis[]) {
 
 
 const leftLabels = [
-  'ST\nMatch',
+  'Grade',
   'Pedigree\nStrength',
   'Age',
   'Vendor',
@@ -614,7 +615,17 @@ export default function CompareShortlist({
   onOpenMore,
   analysisRows,
 }: NavProps) {
-  const horses = useMemo(() => buildCompareHorses(analysisRows), [analysisRows]);
+  const [notesVersion, setNotesVersion] = useState(0);
+
+  useEffect(
+    () => subscribeToLotNotes(() => setNotesVersion(version => version + 1)),
+    [],
+  );
+
+  const horses = useMemo(
+    () => buildCompareHorses(analysisRows),
+    [analysisRows, notesVersion],
+  );
 
   return (
     <SafeAreaView style={styles.container}>
