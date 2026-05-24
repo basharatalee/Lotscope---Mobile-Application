@@ -44,7 +44,8 @@ type AppIconName =
   | 'horse-head'
   | 'user-group';
 
-const horseHero = require('../../assets/black-horse.png') as ImageSourcePropType;
+const horseHero =
+  require('../../assets/black-horse.png') as ImageSourcePropType;
 
 const palette = {
   black: '#020406',
@@ -184,10 +185,14 @@ function buildCatalogueLots(analysisRows?: SouthportTycoonAnalysis[]): Lot[] {
           : '',
         vendorThinks: lot.analysis?.commercialNotes ?? lot.cataloguePedigree,
         privacy: 'Private to you and your team',
-        warning: 'CSV intelligence enriches this Magic Millions catalogue lot; it does not create a new sale horse.',
+        warning:
+          'CSV intelligence enriches this Magic Millions catalogue lot; it does not create a new sale horse.',
       };
     })
-    .sort((a, b) => (b.analysis?.rankingScore ?? 0) - (a.analysis?.rankingScore ?? 0));
+    .sort(
+      (a, b) =>
+        (b.analysis?.rankingScore ?? 0) - (a.analysis?.rankingScore ?? 0),
+    );
 }
 
 function SalesScreen({
@@ -206,7 +211,8 @@ function SalesScreen({
   const [activeTab, setActiveTab] = useState<SaleTab>('live');
   const [screenMode, setScreenMode] = useState<ScreenMode>('sales');
   const [selectedLot, setSelectedLot] = useState<Lot | null>(null);
-  const [catalogueFilter, setCatalogueFilter] = useState<CatalogueFilter>('all');
+  const [catalogueFilter, setCatalogueFilter] =
+    useState<CatalogueFilter>('all');
   const [catalogueSort, setCatalogueSort] = useState<CatalogueSort>('rank');
   const [catalogueSearch, setCatalogueSearch] = useState('');
   const [selectedStallion, setSelectedStallion] = useState(allStallionsLabel);
@@ -220,12 +226,22 @@ function SalesScreen({
     () => getStallionOptions(catalogueLots),
     [catalogueLots],
   );
-  const gradeOptions = useMemo(() => getGradeOptions(catalogueLots), [catalogueLots]);
-  const ageOptions = useMemo(() => getAgeOptions(catalogueLots), [catalogueLots]);
-  const activeStallion = stallionOptions.some(option => option.label === selectedStallion)
+  const gradeOptions = useMemo(
+    () => getGradeOptions(catalogueLots),
+    [catalogueLots],
+  );
+  const ageOptions = useMemo(
+    () => getAgeOptions(catalogueLots),
+    [catalogueLots],
+  );
+  const activeStallion = stallionOptions.some(
+    option => option.label === selectedStallion,
+  )
     ? selectedStallion
     : stallionOptions[0]?.label ?? allStallionsLabel;
-  const activeGrade = gradeOptions.some(option => option.label === selectedGrade)
+  const activeGrade = gradeOptions.some(
+    option => option.label === selectedGrade,
+  )
     ? selectedGrade
     : gradeOptions[0]?.label ?? allGradesLabel;
   const activeAge = ageOptions.some(option => option.label === selectedAge)
@@ -306,8 +322,6 @@ function SalesScreen({
         activeGrade={activeGrade}
         activeAge={activeAge}
         stallionOptions={stallionOptions}
-        gradeOptions={gradeOptions}
-        ageOptions={ageOptions}
         onChangeCatalogueSearch={setCatalogueSearch}
         onCycleFilter={cycleFilter}
         onCycleSort={cycleSort}
@@ -322,7 +336,8 @@ function SalesScreen({
     <SafeAreaView style={styles.screen}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}>
+        contentContainerStyle={styles.scrollContent}
+      >
         <View style={styles.header}>
           <View style={styles.headerSide} />
           <Text style={styles.title}>SALES</Text>
@@ -366,7 +381,11 @@ function SalesScreen({
   );
 }
 
-function LiveSalesContent({ onOpenCatalogue }: { onOpenCatalogue: () => void }) {
+function LiveSalesContent({
+  onOpenCatalogue,
+}: {
+  onOpenCatalogue: () => void;
+}) {
   return (
     <>
       <SectionHeader title="LIVE SALES" />
@@ -376,7 +395,8 @@ function LiveSalesContent({ onOpenCatalogue }: { onOpenCatalogue: () => void }) 
             source={horseHero}
             resizeMode="cover"
             imageStyle={styles.liveImage}
-            style={styles.liveThumb}>
+            style={styles.liveThumb}
+          >
             <Text style={styles.lotPill}>126</Text>
           </ImageBackground>
 
@@ -479,8 +499,6 @@ function LotsScreen({
   activeGrade,
   activeAge,
   stallionOptions,
-  gradeOptions,
-  ageOptions,
   onChangeCatalogueSearch,
   onCycleFilter,
   onCycleSort,
@@ -503,8 +521,6 @@ function LotsScreen({
   activeGrade: string;
   activeAge: string;
   stallionOptions: StallionOption[];
-  gradeOptions: FilterOption[];
-  ageOptions: FilterOption[];
   onChangeCatalogueSearch: (value: string) => void;
   onCycleFilter: () => void;
   onCycleSort: () => void;
@@ -514,10 +530,7 @@ function LotsScreen({
 }) {
   const renderLot = useCallback<ListRenderItem<Lot>>(
     ({ item }) => (
-      <MemoizedLotCatalogueRow
-        lot={item}
-        onPress={() => onOpenLot(item)}
-      />
+      <MemoizedLotCatalogueRow lot={item} onPress={() => onOpenLot(item)} />
     ),
     [onOpenLot],
   );
@@ -577,7 +590,9 @@ function LotsScreen({
               size={12}
               color={palette.goldBright}
             />
-            <Text style={styles.filterButtonText}>{filterLabels[catalogueFilter]}</Text>
+            <Text style={styles.filterButtonText}>
+              {filterLabels[catalogueFilter]}
+            </Text>
           </Pressable>
           <Pressable style={styles.sortButton} onPress={onCycleSort}>
             <FontAwesome6
@@ -586,12 +601,17 @@ function LotsScreen({
               size={12}
               color={palette.goldBright}
             />
-            <Text style={styles.filterButtonText}>Sort: {sortLabels[catalogueSort]}</Text>
+            <Text style={styles.filterButtonText}>
+              Sort: {sortLabels[catalogueSort]}
+            </Text>
           </Pressable>
         </View>
 
         <View style={styles.stallionFilterRow}>
-          <Pressable style={styles.stallionFilterButton} onPress={onCycleStallion}>
+          <Pressable
+            style={styles.stallionFilterButton}
+            onPress={onCycleStallion}
+          >
             <FontAwesome6
               name="horse-head"
               iconStyle="solid"
@@ -603,12 +623,16 @@ function LotsScreen({
             </Text>
           </Pressable>
           <Text style={styles.stallionFilterMeta}>
-            {stallionOptions.length} option{stallionOptions.length === 1 ? '' : 's'}
+            {stallionOptions.length} option
+            {stallionOptions.length === 1 ? '' : 's'}
           </Text>
         </View>
 
         <View style={styles.secondaryFilterRow}>
-          <Pressable style={styles.secondaryFilterButton} onPress={onCycleGrade}>
+          <Pressable
+            style={styles.secondaryFilterButton}
+            onPress={onCycleGrade}
+          >
             <Text style={styles.secondaryFilterText}>Grade: {activeGrade}</Text>
           </Pressable>
           <Pressable style={styles.secondaryFilterButton} onPress={onCycleAge}>
@@ -621,7 +645,9 @@ function LotsScreen({
             {catalogueLots.length} of {totalLotCount} Magic Millions lots
           </Text>
           <View style={styles.overlayPill}>
-            <Text style={styles.buyerInsightText}>{activeGrade} | {activeAge}</Text>
+            <Text style={styles.buyerInsightText}>
+              {activeGrade} | {activeAge}
+            </Text>
             <FontAwesome6
               name="circle-info"
               iconStyle="solid"
@@ -647,8 +673,6 @@ function LotsScreen({
       onCycleStallion,
       onCycleAge,
       onCycleGrade,
-      ageOptions.length,
-      gradeOptions.length,
       stallionOptions.length,
       totalLotCount,
     ],
@@ -716,8 +740,11 @@ function SegmentButton({
   return (
     <Pressable
       onPress={onPress}
-      style={[styles.segmentButton, active ? styles.segmentActive : null]}>
-      <Text style={[styles.segmentText, active ? styles.segmentTextActive : null]}>
+      style={[styles.segmentButton, active ? styles.segmentActive : null]}
+    >
+      <Text
+        style={[styles.segmentText, active ? styles.segmentTextActive : null]}
+      >
         {label}
       </Text>
     </Pressable>
@@ -796,14 +823,17 @@ function OnlineSaleRow({ sale, onPress }: { sale: Sale; onPress: () => void }) {
 function LotCatalogueRow({ lot, onPress }: { lot: Lot; onPress: () => void }) {
   const grade = getLotGrade(lot);
   const pedigreeText = [lot.sire, lot.dam].filter(Boolean).join(' x ');
-  const vendorText = [
-    lot.age > 0 ? `${lot.age}yo` : undefined,
-    lot.vendor,
-  ].filter(Boolean).join(' | ');
+  const vendorText = [lot.age > 0 ? `${lot.age}yo` : undefined, lot.vendor]
+    .filter(Boolean)
+    .join(' | ');
 
   return (
     <Pressable onPress={onPress} style={styles.catalogueRow}>
-      <Image source={horseHero} resizeMode="cover" style={styles.catalogueThumb} />
+      <Image
+        source={horseHero}
+        resizeMode="cover"
+        style={styles.catalogueThumb}
+      />
 
       <View style={styles.catalogueCopy}>
         <View style={styles.catalogueTitleRow}>
@@ -861,7 +891,9 @@ function LotCatalogueRow({ lot, onPress }: { lot: Lot; onPress: () => void }) {
               </Text>
             ))}
             {lot.insight ? (
-              <Text style={[styles.insightTag, insightStyleByTone[lot.insightTone]]}>
+              <Text
+                style={[styles.insightTag, insightStyleByTone[lot.insightTone]]}
+              >
                 {lot.insight}
               </Text>
             ) : null}
@@ -886,7 +918,7 @@ function getVisibleCatalogueLots(
   const normalizedSearch = searchQuery.trim().toLowerCase();
   const normalizedStallion = activeStallion.trim().toLowerCase();
   const normalizedGrade = activeGrade.trim().toLowerCase();
-  const normalizedAge = activeAge.trim().toLowerCase();
+  const selectedMaxAge = getAgeFilterValue(activeAge);
 
   return lots
     .filter(lot => {
@@ -908,11 +940,7 @@ function getVisibleCatalogueLots(
         return false;
       }
 
-      if (
-        normalizedAge !== allAgesLabel.toLowerCase() &&
-        normalizedAge &&
-        getAgeLabel(lot.age).toLowerCase() !== normalizedAge
-      ) {
+      if (selectedMaxAge !== null && (!lot.age || lot.age > selectedMaxAge)) {
         return false;
       }
 
@@ -1006,7 +1034,14 @@ function nextFilter(previous: CatalogueFilter): CatalogueFilter {
 }
 
 function nextSort(previous: CatalogueSort): CatalogueSort {
-  const order: CatalogueSort[] = ['grade', 'age', 'rank', 'match', 'pedigree', 'vendor'];
+  const order: CatalogueSort[] = [
+    'grade',
+    'age',
+    'rank',
+    'match',
+    'pedigree',
+    'vendor',
+  ];
   return order[(order.indexOf(previous) + 1) % order.length];
 }
 
@@ -1027,10 +1062,7 @@ function getStallionOptions(lots: Lot[]): StallionOption[] {
     .map(([label, lotCount]) => ({ label, lotCount }))
     .sort((a, b) => b.lotCount - a.lotCount || a.label.localeCompare(b.label));
 
-  return [
-    { label: allStallionsLabel, lotCount: lots.length },
-    ...options,
-  ];
+  return [{ label: allStallionsLabel, lotCount: lots.length }, ...options];
 }
 
 function nextStallion(previous: string, options: StallionOption[]): string {
@@ -1045,7 +1077,9 @@ function nextStallion(previous: string, options: StallionOption[]): string {
 function getGradeOptions(lots: Lot[]): FilterOption[] {
   const grades = Array.from(
     new Set(lots.map(getLotGrade).filter(Boolean)),
-  ).sort((a, b) => getGradeSortValue(b) - getGradeSortValue(a) || a.localeCompare(b));
+  ).sort(
+    (a, b) => getGradeSortValue(b) - getGradeSortValue(a) || a.localeCompare(b),
+  );
 
   return [
     { label: allGradesLabel, value: allGradesLabel },
@@ -1054,12 +1088,17 @@ function getGradeOptions(lots: Lot[]): FilterOption[] {
 }
 
 function getAgeOptions(lots: Lot[]): FilterOption[] {
-  const ages = Array.from(new Set(lots.map(lot => getAgeLabel(lot.age)).filter(Boolean)))
-    .sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+  const ages = Array.from(
+    new Set(lots.map(lot => lot.age).filter(age => age > 0)),
+  ).sort((a, b) => b - a);
 
   return [
     { label: allAgesLabel, value: allAgesLabel },
-    ...ages.map(age => ({ label: age, value: age })),
+    ...ages.map(age => {
+      const label = getAgeLabel(age);
+
+      return { label, value: String(age) };
+    }),
   ];
 }
 
@@ -1073,11 +1112,23 @@ function nextFilterOption(previous: string, options: FilterOption[]): string {
 }
 
 function getLotGrade(lot: Lot) {
-  return lot.analysis?.grade?.trim() || lot.analysis?.commercialRating?.trim() || '';
+  return (
+    lot.analysis?.grade?.trim() || lot.analysis?.commercialRating?.trim() || ''
+  );
 }
 
 function getAgeLabel(age?: number) {
-  return age !== undefined && age > 0 ? `${age}yo` : '';
+  return age !== undefined && age > 0 ? `${age} years & younger` : '';
+}
+
+function getAgeFilterValue(ageLabel: string) {
+  if (ageLabel.trim().toLowerCase() === allAgesLabel.toLowerCase()) {
+    return null;
+  }
+
+  const age = parseInt(ageLabel, 10);
+
+  return Number.isNaN(age) ? null : age;
 }
 
 function getGradeSortValue(grade: string) {
@@ -1103,7 +1154,8 @@ function QuickAction({
         style={[
           styles.quickActionIcon,
           filled ? styles.quickActionIconFilled : null,
-        ]}>
+        ]}
+      >
         <FontAwesome6
           name={icon}
           iconStyle="solid"

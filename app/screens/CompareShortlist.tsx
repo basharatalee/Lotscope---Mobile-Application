@@ -643,7 +643,7 @@ export default function CompareShortlist({
 
         <Text style={styles.edit}>Edit</Text>
       </View>
-
+<ScrollView>
       <ScrollView
         horizontal
         bounces={false}
@@ -787,9 +787,26 @@ export default function CompareShortlist({
             </View>
           ))}
         </View>
+        
+
+        
+      </ScrollView>
+      <Pressable style={styles.bottomButton}>
+        <View style={styles.bottomButtonInner}>
+          <FontAwesome6
+            name="chart-simple"
+            iconStyle="solid"
+            size={16}
+            color="#000"
+          />
+          <Text style={styles.bottomButtonText}>
+            Compare Shortlisted Lots
+          </Text>
+        </View>
+      </Pressable>
       </ScrollView>
 
-      <View style={styles.infoBox}>
+      {/* <View style={styles.infoBox}>
         <FontAwesome6
           name="chart-simple"
           iconStyle="solid"
@@ -808,9 +825,9 @@ export default function CompareShortlist({
             Not the most expensive horse.
           </Text>
         </View>
-      </View>
+      </View> */}
 
-      <Pressable style={styles.bottomButton}>
+      {/* <Pressable style={styles.bottomButton}>
         <View style={styles.bottomButtonInner}>
           <FontAwesome6
             name="chart-simple"
@@ -822,7 +839,7 @@ export default function CompareShortlist({
             Compare Shortlisted Lots
           </Text>
         </View>
-      </Pressable>
+      </Pressable> */}
 
       <BottomTabs
         active="Shortlist"
