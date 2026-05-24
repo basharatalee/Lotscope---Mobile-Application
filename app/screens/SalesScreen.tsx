@@ -5,6 +5,7 @@ import {
   ImageBackground,
   ImageSourcePropType,
   ListRenderItem,
+  Modal,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -84,6 +85,8 @@ type FilterOption = {
   label: string;
   value: string;
 };
+type FoalFilter = 'All foal statuses' | 'In foal' | 'Not in foal';
+type FilterPicker = 'grade' | 'stallion' | 'age' | 'foal' | null;
 
 type Lot = {
   lotNumber: number;
@@ -125,6 +128,12 @@ const sortLabels: Record<CatalogueSort, string> = {
 const allStallionsLabel = 'All stallions';
 const allGradesLabel = 'All grades';
 const allAgesLabel = 'All ages';
+const allFoalStatusesLabel: FoalFilter = 'All foal statuses';
+const foalStatusOptions: FoalFilter[] = [
+  allFoalStatusesLabel,
+  'In foal',
+  'Not in foal',
+];
 
 const onlineSales: Sale[] = [
   {
@@ -218,6 +227,9 @@ function SalesScreen({
   const [selectedStallion, setSelectedStallion] = useState(allStallionsLabel);
   const [selectedGrade, setSelectedGrade] = useState(allGradesLabel);
   const [selectedAge, setSelectedAge] = useState(allAgesLabel);
+  const [selectedFoalStatus, setSelectedFoalStatus] = useState<FoalFilter>(
+    allFoalStatusesLabel,
+  );
   const catalogueLots = useMemo(
     () => buildCatalogueLots(analysisRows),
     [analysisRows],
@@ -257,6 +269,7 @@ function SalesScreen({
         activeStallion,
         activeGrade,
         activeAge,
+        selectedFoalStatus,
       ),
     [
       activeAge,
@@ -266,6 +279,7 @@ function SalesScreen({
       catalogueFilter,
       catalogueSearch,
       catalogueSort,
+      selectedFoalStatus,
     ],
   );
   const openLot = useCallback((lot: Lot) => {
@@ -278,16 +292,6 @@ function SalesScreen({
   const cycleSort = useCallback(() => {
     setCatalogueSort(nextSort);
   }, []);
-  const cycleStallion = useCallback(() => {
-    setSelectedStallion(previous => nextStallion(previous, stallionOptions));
-  }, [stallionOptions]);
-  const cycleGrade = useCallback(() => {
-    setSelectedGrade(previous => nextFilterOption(previous, gradeOptions));
-  }, [gradeOptions]);
-  const cycleAge = useCallback(() => {
-    setSelectedAge(previous => nextFilterOption(previous, ageOptions));
-  }, [ageOptions]);
-
   if (screenMode === 'lotDetail' && selectedLot) {
     return (
       <LotDetails
@@ -321,13 +325,17 @@ function SalesScreen({
         activeStallion={activeStallion}
         activeGrade={activeGrade}
         activeAge={activeAge}
+        activeFoalStatus={selectedFoalStatus}
         stallionOptions={stallionOptions}
+        gradeOptions={gradeOptions}
+        ageOptions={ageOptions}
         onChangeCatalogueSearch={setCatalogueSearch}
         onCycleFilter={cycleFilter}
         onCycleSort={cycleSort}
-        onCycleStallion={cycleStallion}
-        onCycleGrade={cycleGrade}
-        onCycleAge={cycleAge}
+        onSelectStallion={setSelectedStallion}
+        onSelectGrade={setSelectedGrade}
+        onSelectAge={setSelectedAge}
+        onSelectFoalStatus={setSelectedFoalStatus}
       />
     );
   }
@@ -498,13 +506,17 @@ function LotsScreen({
   activeStallion,
   activeGrade,
   activeAge,
+  activeFoalStatus,
   stallionOptions,
+  gradeOptions,
+  ageOptions,
   onChangeCatalogueSearch,
   onCycleFilter,
   onCycleSort,
-  onCycleStallion,
-  onCycleGrade,
-  onCycleAge,
+  onSelectStallion,
+  onSelectGrade,
+  onSelectAge,
+  onSelectFoalStatus,
 }: {
   onBackToSales: () => void;
   onOpenLot: (lot: Lot) => void;
@@ -520,14 +532,19 @@ function LotsScreen({
   activeStallion: string;
   activeGrade: string;
   activeAge: string;
+  activeFoalStatus: FoalFilter;
   stallionOptions: StallionOption[];
+  gradeOptions: FilterOption[];
+  ageOptions: FilterOption[];
   onChangeCatalogueSearch: (value: string) => void;
   onCycleFilter: () => void;
   onCycleSort: () => void;
-  onCycleStallion: () => void;
-  onCycleGrade: () => void;
-  onCycleAge: () => void;
+  onSelectStallion: (value: string) => void;
+  onSelectGrade: (value: string) => void;
+  onSelectAge: (value: string) => void;
+  onSelectFoalStatus: (value: FoalFilter) => void;
 }) {
+  const [activeFilterPicker, setActiveFilterPicker] = useState<FilterPicker>(null);
   const renderLot = useCallback<ListRenderItem<Lot>>(
     ({ item }) => (
       <MemoizedLotCatalogueRow lot={item} onPress={() => onOpenLot(item)} />
@@ -607,37 +624,48 @@ function LotsScreen({
           </Pressable>
         </View>
 
-        <View style={styles.stallionFilterRow}>
+        <View style={styles.secondaryFilterRow}>
           <Pressable
-            style={styles.stallionFilterButton}
-            onPress={onCycleStallion}
+            style={styles.secondaryFilterButton}
+            onPress={() => setActiveFilterPicker('grade')}
+          >
+            <Text style={styles.secondaryFilterText}>Grade: {activeGrade}</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.secondaryFilterButton, styles.coveringSireFilterButton]}
+            onPress={() => setActiveFilterPicker('stallion')}
           >
             <FontAwesome6
               name="horse-head"
               iconStyle="solid"
-              size={12}
+              size={10}
               color={palette.black}
             />
-            <Text style={styles.stallionFilterText}>
+            <Text style={[styles.secondaryFilterText, styles.coveringSireFilterText]}>
               Covering sire: {activeStallion}
             </Text>
           </Pressable>
-          <Text style={styles.stallionFilterMeta}>
-            {stallionOptions.length} option
-            {stallionOptions.length === 1 ? '' : 's'}
-          </Text>
-        </View>
-
-        <View style={styles.secondaryFilterRow}>
           <Pressable
             style={styles.secondaryFilterButton}
-            onPress={onCycleGrade}
+            onPress={() => setActiveFilterPicker('age')}
           >
-            <Text style={styles.secondaryFilterText}>Grade: {activeGrade}</Text>
-          </Pressable>
-          <Pressable style={styles.secondaryFilterButton} onPress={onCycleAge}>
             <Text style={styles.secondaryFilterText}>Age: {activeAge}</Text>
           </Pressable>
+        </View>
+
+        <View style={styles.foalFilterRow}>
+          <Pressable
+            style={styles.secondaryFilterButton}
+            onPress={() => setActiveFilterPicker('foal')}
+          >
+            <Text style={styles.secondaryFilterText}>
+              Foal: {activeFoalStatus}
+            </Text>
+          </Pressable>
+          <Text style={styles.stallionFilterMeta}>
+            {stallionOptions.length} covering sire option
+            {stallionOptions.length === 1 ? '' : 's'}
+          </Text>
         </View>
 
         <View style={styles.lotCountRow}>
@@ -664,17 +692,54 @@ function LotsScreen({
       catalogueSearch,
       catalogueSort,
       activeStallion,
+      activeFoalStatus,
       activeAge,
       activeGrade,
       onBackToSales,
       onChangeCatalogueSearch,
       onCycleFilter,
       onCycleSort,
-      onCycleStallion,
-      onCycleAge,
-      onCycleGrade,
+      setActiveFilterPicker,
       stallionOptions.length,
       totalLotCount,
+    ],
+  );
+  const filterPickerConfig = getFilterPickerConfig({
+    picker: activeFilterPicker,
+    activeGrade,
+    activeStallion,
+    activeAge,
+    activeFoalStatus,
+    gradeOptions,
+    stallionOptions,
+    ageOptions,
+  });
+  const handleSelectFilterOption = useCallback(
+    (value: string) => {
+      if (activeFilterPicker === 'grade') {
+        onSelectGrade(value);
+      }
+
+      if (activeFilterPicker === 'stallion') {
+        onSelectStallion(value);
+      }
+
+      if (activeFilterPicker === 'age') {
+        onSelectAge(value);
+      }
+
+      if (activeFilterPicker === 'foal') {
+        onSelectFoalStatus(value as FoalFilter);
+      }
+
+      setActiveFilterPicker(null);
+    },
+    [
+      activeFilterPicker,
+      onSelectAge,
+      onSelectFoalStatus,
+      onSelectGrade,
+      onSelectStallion,
     ],
   );
   const listFooter = useMemo(
@@ -713,6 +778,78 @@ function LotsScreen({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.lotsScrollContent}
       />
+
+      <Modal
+        visible={filterPickerConfig !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setActiveFilterPicker(null)}
+      >
+        <Pressable
+          style={styles.filterModalBackdrop}
+          onPress={() => setActiveFilterPicker(null)}
+        >
+          <Pressable
+            style={styles.filterModalSheet}
+            onPress={() => undefined}
+          >
+            <View style={styles.filterModalHandle} />
+            <View style={styles.filterModalHeader}>
+              <View>
+                <Text style={styles.filterModalTitle}>
+                  {filterPickerConfig?.title}
+                </Text>
+                <Text style={styles.filterModalSubtitle}>
+                  Select one option to apply the filter
+                </Text>
+              </View>
+              <Pressable
+                style={styles.filterModalClose}
+                onPress={() => setActiveFilterPicker(null)}
+              >
+                <Text style={styles.filterModalCloseText}>×</Text>
+              </Pressable>
+            </View>
+
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.filterModalOptions}
+            >
+              {filterPickerConfig?.options.map(option => {
+                const selected = option.value === filterPickerConfig.activeValue;
+
+                return (
+                  <Pressable
+                    key={option.value}
+                    style={[
+                      styles.filterModalOption,
+                      selected ? styles.filterModalOptionActive : null,
+                    ]}
+                    onPress={() => handleSelectFilterOption(option.value)}
+                  >
+                    <Text
+                      style={[
+                        styles.filterModalOptionText,
+                        selected ? styles.filterModalOptionTextActive : null,
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                    {selected ? (
+                      <FontAwesome6
+                        name="circle-check"
+                        iconStyle="solid"
+                        size={15}
+                        color={palette.goldBright}
+                      />
+                    ) : null}
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <BottomTabs
         onOpenHome={onOpenHome}
@@ -906,6 +1043,69 @@ function LotCatalogueRow({ lot, onPress }: { lot: Lot; onPress: () => void }) {
 
 const MemoizedLotCatalogueRow = React.memo(LotCatalogueRow);
 
+function getFilterPickerConfig({
+  picker,
+  activeGrade,
+  activeStallion,
+  activeAge,
+  activeFoalStatus,
+  gradeOptions,
+  stallionOptions,
+  ageOptions,
+}: {
+  picker: FilterPicker;
+  activeGrade: string;
+  activeStallion: string;
+  activeAge: string;
+  activeFoalStatus: FoalFilter;
+  gradeOptions: FilterOption[];
+  stallionOptions: StallionOption[];
+  ageOptions: FilterOption[];
+}) {
+  if (picker === 'grade') {
+    return {
+      title: 'Grade',
+      activeValue: activeGrade,
+      options: gradeOptions,
+    };
+  }
+
+  if (picker === 'stallion') {
+    return {
+      title: 'Covering sire',
+      activeValue: activeStallion,
+      options: stallionOptions.map(option => ({
+        label:
+          option.label === allStallionsLabel
+            ? option.label
+            : `${option.label} (${option.lotCount})`,
+        value: option.label,
+      })),
+    };
+  }
+
+  if (picker === 'age') {
+    return {
+      title: 'Age',
+      activeValue: activeAge,
+      options: ageOptions,
+    };
+  }
+
+  if (picker === 'foal') {
+    return {
+      title: 'Foal status',
+      activeValue: activeFoalStatus,
+      options: foalStatusOptions.map(option => ({
+        label: option,
+        value: option,
+      })),
+    };
+  }
+
+  return null;
+}
+
 function getVisibleCatalogueLots(
   lots: Lot[],
   filter: CatalogueFilter,
@@ -914,6 +1114,7 @@ function getVisibleCatalogueLots(
   activeStallion: string,
   activeGrade: string,
   activeAge: string,
+  activeFoalStatus: FoalFilter,
 ): Lot[] {
   const normalizedSearch = searchQuery.trim().toLowerCase();
   const normalizedStallion = activeStallion.trim().toLowerCase();
@@ -941,6 +1142,13 @@ function getVisibleCatalogueLots(
       }
 
       if (selectedMaxAge !== null && (!lot.age || lot.age > selectedMaxAge)) {
+        return false;
+      }
+
+      if (
+        activeFoalStatus !== allFoalStatusesLabel &&
+        getFoalStatus(lot) !== activeFoalStatus
+      ) {
         return false;
       }
 
@@ -1065,15 +1273,6 @@ function getStallionOptions(lots: Lot[]): StallionOption[] {
   return [{ label: allStallionsLabel, lotCount: lots.length }, ...options];
 }
 
-function nextStallion(previous: string, options: StallionOption[]): string {
-  if (options.length === 0) {
-    return previous;
-  }
-
-  const currentIndex = options.findIndex(option => option.label === previous);
-  return options[(currentIndex + 1) % options.length].label;
-}
-
 function getGradeOptions(lots: Lot[]): FilterOption[] {
   const grades = Array.from(
     new Set(lots.map(getLotGrade).filter(Boolean)),
@@ -1102,15 +1301,6 @@ function getAgeOptions(lots: Lot[]): FilterOption[] {
   ];
 }
 
-function nextFilterOption(previous: string, options: FilterOption[]): string {
-  if (options.length === 0) {
-    return previous;
-  }
-
-  const currentIndex = options.findIndex(option => option.label === previous);
-  return options[(currentIndex + 1) % options.length].label;
-}
-
 function getLotGrade(lot: Lot) {
   return (
     lot.analysis?.grade?.trim() || lot.analysis?.commercialRating?.trim() || ''
@@ -1137,6 +1327,51 @@ function getGradeSortValue(grade: string) {
   const index = order.indexOf(normalizedGrade);
 
   return index >= 0 ? order.length - index : 0;
+}
+
+function getFoalStatus(lot: Lot): Extract<FoalFilter, 'In foal' | 'Not in foal'> {
+  const rawStatus = getRawFoalStatus(lot).trim().toLowerCase();
+
+  if (
+    !rawStatus ||
+    rawStatus === 'empty' ||
+    rawStatus.includes('not served') ||
+    rawStatus.includes('missed') ||
+    rawStatus.includes('not in foal') ||
+    rawStatus.includes('barren') ||
+    rawStatus.includes('slipped')
+  ) {
+    return 'Not in foal';
+  }
+
+  if (
+    rawStatus.includes('in foal') ||
+    rawStatus.includes('pregnant') ||
+    rawStatus.includes('positive')
+  ) {
+    return 'In foal';
+  }
+
+  return 'Not in foal';
+}
+
+function getRawFoalStatus(lot: Lot) {
+  const sourceFields = lot.analysis?.sourceFields ?? {};
+  const candidateEntry = Object.entries(sourceFields).find(([header]) => {
+    const normalizedHeader = header.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    return [
+      'foalstatus',
+      'infoal',
+      'pregnancystatus',
+      'pregnancy',
+      'breedingstatus',
+      'servicestatus',
+      'coveringstatus',
+    ].some(candidate => normalizedHeader.includes(candidate));
+  });
+
+  return candidateEntry?.[1] ?? '';
 }
 
 function QuickAction({
@@ -1745,13 +1980,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 7,
-    marginBottom: 9,
+    marginBottom: 7,
   },
 
   secondaryFilterButton: {
     flex: 1,
-    minHeight: 29,
+    minHeight: 34,
     justifyContent: 'center',
+    alignItems: 'center',
     borderRadius: 6,
     borderWidth: 1,
     borderColor: palette.border,
@@ -1759,11 +1995,133 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
   },
 
+  coveringSireFilterButton: {
+    flex: 1.35,
+    flexDirection: 'row',
+    gap: 5,
+    backgroundColor: palette.goldBright,
+    borderColor: palette.goldBright,
+  },
+
   secondaryFilterText: {
     color: palette.goldBright,
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '800',
     textAlign: 'center',
+    lineHeight: 12,
+  },
+
+  coveringSireFilterText: {
+    color: palette.black,
+  },
+
+  foalFilterRow: {
+    minHeight: 34,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 9,
+  },
+
+  filterModalBackdrop: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.68)',
+  },
+
+  filterModalSheet: {
+    maxHeight: '72%',
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    borderWidth: 1,
+    borderColor: palette.border,
+    backgroundColor: palette.panel,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 22,
+  },
+
+  filterModalHandle: {
+    alignSelf: 'center',
+    width: 42,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#343943',
+    marginBottom: 15,
+  },
+
+  filterModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 14,
+    marginBottom: 14,
+  },
+
+  filterModalTitle: {
+    color: palette.white,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+
+  filterModalSubtitle: {
+    color: palette.muted,
+    fontSize: 10,
+    fontWeight: '600',
+    marginTop: 4,
+  },
+
+  filterModalClose: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: palette.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: palette.panelSoft,
+  },
+
+  filterModalCloseText: {
+    color: palette.goldBright,
+    fontSize: 22,
+    lineHeight: 24,
+    marginTop: -2,
+  },
+
+  filterModalOptions: {
+    gap: 9,
+    paddingBottom: 6,
+  },
+
+  filterModalOption: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: palette.border,
+    backgroundColor: palette.black,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+
+  filterModalOptionActive: {
+    borderColor: palette.goldBright,
+    backgroundColor: '#151108',
+  },
+
+  filterModalOptionText: {
+    flex: 1,
+    color: palette.muted,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
+  filterModalOptionTextActive: {
+    color: palette.goldBright,
   },
 
   lotCountRow: {
